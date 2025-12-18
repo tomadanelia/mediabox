@@ -29,6 +29,7 @@ return new class extends Migration
     
     public function down(): void
     {
-        Schema::dropIfExists('interaction_tables');
+        Schema::dropIfExists('user_favourites');
+        Schema::dropIfExists('user_watch_history');
     }
 };
