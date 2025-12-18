@@ -25,12 +25,13 @@ class ChannelSeeder extends Seeder
         $name = basename($oldData['CHANNEL']); 
 
         Channel::create([
+            'id' => null,
             'name' => $name,
             'description' => null,
             'stream_url' => $oldData['URL'],
             'thumbnail_url' => null,
             'icon_url' => null,
-            'category_id' => "standard_channels",
+            'category_id' => "4236cb6d-262f-4d42-9fe7-85c98bfc7d99",
             'is_active' => true,
             'is_vip_only' => false,
             'view_count' => 0,
