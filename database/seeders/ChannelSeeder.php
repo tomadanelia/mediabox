@@ -8,9 +8,7 @@ use App\Models\Channel;
 
 class ChannelSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
+
     public function run(): void
     {
             $oldData = [
@@ -24,11 +22,12 @@ class ChannelSeeder extends Seeder
 
         $name = basename($oldData['CHANNEL']); 
 
-        Channel::create([
+        Channel::firstOrCreate(
+            ['stream_url' => $oldData['URL']],
+            [
             'id' => null,
             'name' => $name,
             'description' => null,
-            'stream_url' => $oldData['URL'],
             'thumbnail_url' => null,
             'icon_url' => null,
             'category_id' => "4236cb6d-262f-4d42-9fe7-85c98bfc7d99",
