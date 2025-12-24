@@ -8,8 +8,10 @@ class ChannelCategory extends Model
 {
     use HasUuid;
     protected $fillable = [
-        'name',
-        'description',
+        'name_ka',
+        'name_en',
+        'description_ka',
+        'description_en',
         'icon_url',
     ];
     public function channels()

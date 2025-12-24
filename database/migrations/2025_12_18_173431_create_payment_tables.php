@@ -11,8 +11,10 @@ return new class extends Migration
 {
     Schema::create('subscription_plans', function (Blueprint $table) {
         $table->uuid('id')->primary();
-        $table->string('name'); 
-        $table->text('description')->nullable();
+        $table->string('name_ka');
+        $table->string('name_en');
+        $table->text('description_ka')->nullable();
+        $table->text('description_en')->nullable();
         $table->decimal('price', 10, 2); 
         $table->integer('duration_days');
         $table->boolean('is_active')->default(true);
