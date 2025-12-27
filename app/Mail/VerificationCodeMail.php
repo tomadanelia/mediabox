@@ -23,7 +23,7 @@ class VerificationCodeMail extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            textString: "Hello $this->username, your verification code is: $this->code"
+            htmlString: "<p>Hello {$this->username},</p><p>Your verification code is: <strong>{$this->code}</strong></p>"
         );
     }
 }
