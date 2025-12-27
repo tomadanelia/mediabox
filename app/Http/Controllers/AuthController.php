@@ -39,6 +39,7 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'User registered successfully. Please verify your account.',
             'user_id' => $user->id,
+            'code' => $otp, // For testing purposes; remove in production
         ], 201);
     }
 
