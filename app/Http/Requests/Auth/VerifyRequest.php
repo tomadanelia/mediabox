@@ -16,6 +16,7 @@ class VerifyRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'user_id'=>['required','uuid'],
             "code"=>['required','string','size:6'],
         ];
     }
