@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
-
+use Illuminate\Support\Facades\RateLimiter; 
+use Illuminate\Support\Str;                 
 class AuthController extends Controller
 {
     public function register(RegisterRequest $request): JsonResponse
@@ -76,20 +77,35 @@ class AuthController extends Controller
     }
 
     public function login(LoginRequest $request): JsonResponse
-    {
+    { 
+        // throttle login attempts per email/phone counter till 5 in cache and block for 15 minutes
+        $throttleKey = 'login_attempt:' . Str::lower($request->login);
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+        $seconds = RateLimiter::availableIn($throttleKey);
+        
+        throw ValidationException::withMessages([
+            'login' => ["Too many login attempts on same email or phone. Please try again in {$seconds} seconds."],
+        ])->status(429);
+    }
         $loginType = filter_var($request->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
+    
 
         $user = User::where($loginType, $request->login)->first();
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
+         RateLimiter::hit($throttleKey, 900);
+        $attemptsLeft = RateLimiter::remaining($throttleKey, 5);
+
             throw ValidationException::withMessages([
-                'login' => ['The provided credentials are incorrect.'],
+                'login' => ["The provided credentials are incorrect.($attemptsLeft attempts remaining)"],
             ]);
         }
 
         if (! $user->email_verified_at && ! $user->phone_verified_at) {
             return response()->json(['message' => 'Account not verified.'], 403);
         }
+        RateLimiter::clear($throttleKey);
+
 
         $abilities = match ($user->role) {
             'admin' => ['*'],
