@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\VerifyRequest;
+use Illuminate\Http\Request;
 use App\Mail\VerificationCodeMail;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -12,7 +13,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
-
+use Illuminate\Support\Facades\RateLimiter; 
+use Illuminate\Support\Str;                 
 class AuthController extends Controller
 {
     public function register(RegisterRequest $request): JsonResponse
@@ -39,7 +41,7 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'User registered successfully. Please verify your account.',
             'user_id' => $user->id,
-            'code' => $otp, // For testing purposes; remove in production
+            'code' => $otp, // For testing purposes  i am removing  in production
         ], 201);
     }
 
@@ -76,20 +78,35 @@ class AuthController extends Controller
     }
 
     public function login(LoginRequest $request): JsonResponse
-    {
+    { 
+        // throttle login attempts per email/phone counter till 5 in cache and block for 15 minutes
+        $throttleKey = 'login_attempt:' . Str::lower($request->login);
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+        $seconds = RateLimiter::availableIn($throttleKey);
+        
+        throw ValidationException::withMessages([
+            'login' => ["Too many login attempts on same email or phone. Please try again in {$seconds} seconds."],
+        ])->status(429);
+    }
         $loginType = filter_var($request->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
+    
 
         $user = User::where($loginType, $request->login)->first();
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
+         RateLimiter::hit($throttleKey, 900);
+        $attemptsLeft = RateLimiter::remaining($throttleKey, 5);
+
             throw ValidationException::withMessages([
-                'login' => ['The provided credentials are incorrect.'],
+                'login' => ["The provided credentials are incorrect.($attemptsLeft attempts remaining)"],
             ]);
         }
 
         if (! $user->email_verified_at && ! $user->phone_verified_at) {
             return response()->json(['message' => 'Account not verified.'], 403);
         }
+        RateLimiter::clear($throttleKey);
+
 
         $abilities = match ($user->role) {
             'admin' => ['*'],
@@ -111,6 +128,49 @@ class AuthController extends Controller
             'user' => $user,
         ]);
     }
+    public function resendCode(Request $request): JsonResponse
+    {
+     $request->validate([
+        'login' => 'required|string',
+    ]);
+
+    $loginType = filter_var($request->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
+    $user = User::where($loginType, $request->login)->first();
+
+    if (! $user) {
+        return response()->json(['message' => 'If an account exists, a code has been sent.'], 200);
+    }
+
+    if ($user->email_verified_at || $user->phone_verified_at) {
+        return response()->json(['message' => 'Account is already verified.'], 400);
+    }
+
+    $cooldownKey = 'otp_cooldown_' . $user->id;
+    if (Cache::has($cooldownKey)) {
+        return response()->json(['message' => 'Please wait before requesting a new code.'], 429);
+    }
+
+    $otp = rand(100000, 999999);
+    
+    Cache::put('verification_code_' . $user->id, $otp, 300);
+    
+    // i set  a cooldown lock for 60 seconds
+    Cache::put($cooldownKey, true, 60);
+
+    // 5. Send Email / SMS
+    if ($user->email) {
+        Mail::to($user->email)->send(new VerificationCodeMail($otp, $user->username));
+    } elseif ($user->phone) {
+        Log::info("Resent SMS OTP for {$user->phone}: {$otp}");
+    }
+
+    return response()->json([
+        'message' => 'Verification code sent.',
+        'code' => $otp, // For testing purposes; i am removing in production
+    ]);
+
+    }
+
 
     public function logout(): JsonResponse
     {
