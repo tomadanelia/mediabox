@@ -8,6 +8,7 @@ Route::get('/channels', [ChannelController::class, 'index']) ->middleware('throt
 Route::post('/auth/login', [AuthController::class, 'login'])  ->middleware('throttle:3,1');
 Route::post('/auth/verify', [AuthController::class, 'verify']) ->middleware('throttle:3,1');
 Route::post('/auth/register', [AuthController::class, 'register']) ->middleware('throttle:5,1');
+Route::post('/auth/resend', [AuthController::class, 'resendCode'])->middleware('throttle:3,1');
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     
