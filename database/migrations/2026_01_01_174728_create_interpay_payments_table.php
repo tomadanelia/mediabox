@@ -13,7 +13,10 @@ return new class extends Migration
             $table->id();
 
             $table->string('payment_id')->unique(); 
-            $table->string('customer_id');
+           $table->uuid('account_id') 
+        ->nullable(false)
+        ->constrained('accounts') 
+        ->onDelete('cascade');
             $table->string('service_id');
 
             $table->integer('amount_tetri');

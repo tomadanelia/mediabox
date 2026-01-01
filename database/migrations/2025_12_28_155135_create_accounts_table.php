@@ -9,7 +9,7 @@ return new class extends Migration
     {
         Schema::create('accounts', function (Blueprint $table) {
             $table->uuid('id')->primary(); 
-            $table->foreignId('user_id')->unique()->constrained()->onDelete('cascade'); 
+            $table->foreignUuid('user_id')->unique()->constrained('users')->onDelete('cascade');
             $table->decimal('balance', 15, 2)->default(0);
             $table->timestamps();
         });
