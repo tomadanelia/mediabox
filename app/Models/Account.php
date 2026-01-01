@@ -7,12 +7,17 @@ use App\Traits\HasUuid;
 
 class Account extends Model
 {
-        use HasUuid;
+    use HasUuid;
     protected $fillable = [
         'user_id',
         'balance',
     ];
-    
+
+    protected $casts = [
+        'balance' => 'decimal:2',
+        'user_id' => 'string',
+        'id'      => 'string',
+    ];
 
     public function user()
     {

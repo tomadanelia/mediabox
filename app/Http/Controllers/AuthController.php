@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\RateLimiter; 
-use Illuminate\Support\Str;                 
+use Illuminate\Support\Str;
 class AuthController extends Controller
 {
     public function register(RegisterRequest $request): JsonResponse
@@ -68,7 +68,10 @@ class AuthController extends Controller
         Cache::forget($cacheKey);
 
         $token = $user->createToken('pre_subscription_token', ['view:free'])->plainTextToken;
-
+        Account::create([
+            'user_id' => $user->id,
+            'balance' => 0,
+        ]);
         return response()->json([
             'message' => 'Account verified successfully.',
             'access_token' => $token,
@@ -154,10 +157,8 @@ class AuthController extends Controller
     
     Cache::put('verification_code_' . $user->id, $otp, 300);
     
-    // i set  a cooldown lock for 60 seconds
     Cache::put($cooldownKey, true, 60);
 
-    // 5. Send Email / SMS
     if ($user->email) {
         Mail::to($user->email)->send(new VerificationCodeMail($otp, $user->username));
     } elseif ($user->phone) {
