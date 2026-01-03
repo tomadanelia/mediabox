@@ -72,11 +72,8 @@ class CreditBalanceService
             });
             
             $this->updateCallbackLog($logId, $result, $result['status']);
-            
-            return response()->json(
-                ['message' => $result['message'], 'balance' => $result['balance'] ?? null],
-                $result['status']
-            );
+            return response()->json($result, $result['status']);
+
             
         } catch (\Exception $e) {
             Log::error('InterPay payment failed', [
