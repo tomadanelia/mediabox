@@ -17,7 +17,7 @@ class CreditBalanceService
             $result = DB::transaction(function () use ($request) {
                 $accountId = $request->input('CUSTOMER_ID');
                 $paymentId = $request->input('PAYMENT_ID');
-                $amount = $request->input('PAY_AMOUNT');
+                $amount = (int) $request->input('PAY_AMOUNT');
                 
                 $paymentExists = InterpayPayment::where('payment_id', $paymentId)
                     ->lockForUpdate()
@@ -50,7 +50,6 @@ class CreditBalanceService
                         'status' => 400
                     ];
                 }
-                
                 $account->balance += $amount/100;
                 $account->save();
                 
@@ -66,17 +65,15 @@ class CreditBalanceService
                 ]);
                 
                   return [
-                'status' => 'success',
+                'success' => true,
+                'status' => 200,
                 'transaction_id' => 'TXN_' . $payment->id
             ];
             });
             
             $this->updateCallbackLog($logId, $result, $result['status']);
-            
-            return response()->json(
-                ['message' => $result['message'], 'balance' => $result['balance'] ?? null],
-                $result['status']
-            );
+            return response()->json($result, $result['status']);
+
             
         } catch (\Exception $e) {
             Log::error('InterPay payment failed', [
