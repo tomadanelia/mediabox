@@ -5,8 +5,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ChannelController; 
 use App\Http\Controllers\AuthController;
 Route::prefix('channels')->group(function () {
-    Route::get('/', [ChannelController::class, 'index']);
-    Route::get('/{id}/stream', [ChannelController::class, 'stream']); 
+    Route::get('/', [ChannelController::class, 'getChannelFacade']);
+    Route::get('/{id}/stream', [ChannelController::class, 'getStreamUrl']); 
     Route::get('/{id}/programs', [ChannelController::class, 'programs']);
     Route::get('/{id}/archive', [ChannelController::class, 'archive']);
 });
