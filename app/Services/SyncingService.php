@@ -26,7 +26,7 @@ class SyncingService
                     'Method' => 'GetChannelList'
                 ]);
 
-            if ($response->successful()) {
+            if ($response->ok()) {
                 return $response->json();
             }
             

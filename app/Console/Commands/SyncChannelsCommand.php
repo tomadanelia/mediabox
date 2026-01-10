@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Services\MediaBoxService;
+use App\Services\SyncingService;
 use App\Models\Channel;
 use App\Models\ChannelCategory;
 
@@ -12,7 +12,7 @@ class SyncChannelsCommand extends Command
     protected $signature = 'app:sync-channels';
     protected $description = 'Sync channels from Legacy API to my DB';
 
-    public function handle(MediaBoxService $service)
+    public function handle(SyncingService $service)
     {
         $this->info('Fetching channels from MediaBox222...');
         
@@ -34,7 +34,7 @@ class SyncChannelsCommand extends Command
 
         $count = 0;
         foreach ($channels as $remote) {
-            Channel::updateOrCreate(
+            Channel::firstOrCreate(
                 ['external_id' => $remote['UID']], 
                 [
                     'number' => $remote['CHANNEL_NUMBER'],
