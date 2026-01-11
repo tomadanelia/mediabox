@@ -9,19 +9,21 @@ class Channel extends Model
 {
     use HasUuid;
 
-    protected $fillable = [
+     protected $fillable = [
+        'external_id',  
+        'number',       
+        'epg_id',       
         'name_ka',
         'name_en',
         'description_ka',
         'description_en',
-        'stream_url',
-        'thumbnail_url',
         'icon_url',
         'category_id',
         'is_active',
         'is_vip_only',
         'view_count'
     ];
+
 
     protected $casts = [
         'is_active' => 'boolean',
