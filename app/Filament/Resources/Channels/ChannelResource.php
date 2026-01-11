@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Resources\Channels;
 
-use App\Filament\Resources\ChannelResource\Pages;
+use App\Filament\Resources\Channels\Pages;
 use App\Models\Channel;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -26,13 +26,11 @@ class ChannelResource extends Resource
     protected static ?string $model = Channel::class;
 
     protected static string|BackedEnum|null $navigationIcon =  Heroicon::RectangleStack;
-   public static function schema(Schema $schema): Schema
+    public static function form(Schema $schema): Schema
     {
         return $schema
-            ->columns([
-
+            ->schema([
                 // Section 1: Basic Info
-                /** @phpstan-ignore-next-line */
                 Section::make('Display Information')
                     ->schema([
                         Grid::make(2)->schema([
@@ -65,16 +63,16 @@ class ChannelResource extends Resource
                                 ->required(),
                         ]),
                         
-                            Grid::make(3)->schema([
+                        Grid::make(3)->schema([
                             Toggle::make('is_active')
-                         ->label('Active')
-                          ->default(true)
-                          ->inline(),
+                                ->label('Active')
+                                ->default(true)
+                                ->inline(),
 
-                          Toggle::make('is_vip_only')
-                          ->label('VIP Only')
-                          ->default(false)
-                          ->inline(),
+                            Toggle::make('is_vip_only')
+                                ->label('VIP Only')
+                                ->default(false)
+                                ->inline(),
                         ]),
                     ]),
 

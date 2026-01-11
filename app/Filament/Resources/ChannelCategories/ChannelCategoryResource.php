@@ -22,10 +22,10 @@ class ChannelCategoryResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name_en';
 
-    public static function schema(Schema $schema): Schema
+    public static function form(Schema $schema): Schema
     {
         return $schema
-            ->columns([
+            ->schema([
                 TextInput::make('name_ka')->required()->label('Name (KA)'),
                 TextInput::make('name_en')->required()->label('Name (EN)'),
                 TextInput::make('external_id')->label('External ID'),

@@ -25,8 +25,8 @@ class NoPanelProvider extends PanelProvider
     {
         return $panel
             ->default()
-            ->id('no')
-            ->path('no')
+            ->id('admin')
+            ->path('admin')
             ->login()
             ->colors([
                 'primary' => Color::Amber,

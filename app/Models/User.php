@@ -2,6 +2,7 @@
 
 namespace App\Models;
 use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasName;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -9,7 +10,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens; 
 use App\Traits\HasUuid;
 
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, HasName
 {
     use HasFactory, Notifiable, HasUuid, HasApiTokens; 
 
@@ -42,8 +43,13 @@ class User extends Authenticatable implements FilamentUser
 {
     return $this->hasOne(Account::class);
 }
- public function canAccessPanel(Panel $panel): bool
+    public function canAccessPanel(Panel $panel): bool
     {
         return $this->role === 'admin';
+    }
+
+    public function getFilamentName(): string
+    {
+        return $this->full_name ?? $this->username ?? $this->email ?? 'User';
     }
 }
