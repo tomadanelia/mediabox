@@ -33,7 +33,7 @@ class VerificationService
      * @param string $inputOtp OTP provided by user
      * @return bool True if valid, false otherwise
      */
-    public function validateOtp(int $userId, string $inputOtp): bool
+    public function validateOtp(string $userId, string $inputOtp): bool
     {
         $cacheKey = 'verification_code_' . $userId;
         $cachedOtp = Cache::get($cacheKey);
