@@ -11,35 +11,46 @@ class SyncingService
     private string $baseUrl = 'https://222.mediabox.ge/webapi';
     private array $headers = [
         'Origin' => 'https://222.mediabox.ge',
-        'Content-Type' => 'application/json',
-        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        'Accept' => 'application/json',
     ];
 
     /**
      * Getting raw channelList for Synchronization
      */
-    public function fetchChannelList(): array
-    {
-        try {
-            $response = Http::withHeaders($this->headers)
-                ->post($this->baseUrl, [
-                    'Method' => 'GetChannelList'
-                ]);
+   public function fetchChannelList(): array
+{
+    try {
+        $response = Http::withoutVerifying()->withHeaders([
+            'Accept' => 'application/json',
+            'Content-Type' => 'application/json',
+            'Cache-Control' => 'no-cache',
+            'Origin' => 'https://222.mediabox.ge',
+            'Referer' => 'https://222.mediabox.ge/',
+            'User-Agent' => 'PostmanRuntime/7.51.0', 
+        ])->post($this->baseUrl, [
+            'Method' => 'GetChannelList'
+        ]);
 
-            if ($response->ok()) {
-                return $response->json();
-            }
-            
-            Log::error('MediaBox API Error: ' . $response->body());
-            return [];
-        } catch (\Exception $e) {
-            Log::error('MediaBox Connection Error: ' . $e->getMessage());
-            return [];
+        dump('Request URL: ' . $this->baseUrl);
+        dump('Request Body: ' . json_encode(['Method' => 'GetChannelList']));
+        dump('Response Status: ' . $response->status());
+        dump('Response Headers: ' . json_encode($response->headers()));
+        dump('Response Body: ' . $response->body());
+
+        if ($response->successful()) {
+            return $response->json();
         }
+        
+        dump('API Error: ' . $response->status() . ' - ' . $response->body());
+        return [];
+    } catch (\Exception $e) {
+        dump('Exception: ' . $e->getMessage());
+        dump('Exception Trace: ' . $e->getTraceAsString());
+        return [];
     }
-
+}
     /**
-     * Gets livestream url from cache or fetches it from MediaBox API and caches it for 3.5 hours
+     * Gets livestream url from cache or fetches it from MediaBox API and caches it for 1 hour
      * params: externalId - Channel external ID
      * return: array|null - ['url' => string, 'expires_at' => int, 'server_time' => int] or null on failure
      */
@@ -47,8 +58,8 @@ class SyncingService
     {
         $key = "channel_stream_{$externalId}";
 
-        return Cache::remember($key, 12600, function () use ($externalId) {
-            $response = Http::withHeaders($this->headers)
+        return Cache::remember($key, 3600, function () use ($externalId) {
+            $response = Http::withoutVerifying()->withHeaders($this->headers)
                 ->post($this->baseUrl, [
                     'Method' => 'GetLiveStream',
                     'Pars' => ['CHANNEL_ID' => (int)$externalId],
