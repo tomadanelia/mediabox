@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Cache;
 class VerificationService
 {
     /**
-     * Generate a random OTP code of specified length
+     * Generate a random OTP code of specified length and send code via email or SMS
      *
      * @param int $length Length of the OTP code
      * @return string Generated OTP code
@@ -26,20 +26,33 @@ class VerificationService
         return $otp;
 
     }
-
-    /**
-     * Validate the provided OTP code against the expected code
+  /**
+     * Validate OTP code from cache
      *
-     * @param string $inputOtp The OTP code provided by the user
-     * @param string $expectedOtp The expected OTP code to validate against
-     * @return bool True if the OTP codes match, false otherwise
+     * @param int $userId User ID to validate against
+     * @param string $inputOtp OTP provided by user
+     * @return bool True if valid, false otherwise
      */
-    public function validateOtp(string $cacheKey, string $expectedOtp): bool
+    public function validateOtp(int $userId, string $inputOtp): bool
     {
-        $inputOtp = Cache::get($cacheKey);
-         if (! $inputOtp || $inputOtp != $expectedOtp) {
+        $cacheKey = 'verification_code_' . $userId;
+        $cachedOtp = Cache::get($cacheKey);
+        
+        if (!$cachedOtp) {
             return false;
         }
-        return true;
+        
+        return hash_equals((string)$cachedOtp, $inputOtp);
     }
-}   
+    
+    /**
+     * Clear OTP from cache after verification
+     *
+     * @param int $userId User ID
+     * @return void
+     */
+    public function clearOtp(int $userId): void
+    {
+        Cache::forget('verification_code_' . $userId);
+    }
+}

@@ -40,8 +40,7 @@ class AuthController extends Controller
 
     public function verify(VerifyRequest $request): JsonResponse
     {
-        $cacheKey = 'verification_code_'.$request->user_id;
-        if (! $this->verificationService->validateOtp($cacheKey, $request->code)) {
+        if (! $this->verificationService->validateOtp($request->user_id, $request->code)) {
             return response()->json(['message' => 'Invalid or expired verification code.'], 400);
         }
 
@@ -56,7 +55,7 @@ class AuthController extends Controller
 
         $user->save();
 
-        Cache::forget($cacheKey);
+        $this->verificationService->clearOtp($user->id);
 
         $token = $user->createToken('pre_subscription_token', ['view:free'])->plainTextToken;
         Account::create([
