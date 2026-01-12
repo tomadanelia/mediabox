@@ -5,15 +5,12 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\VerifyRequest;
 use Illuminate\Http\Request;
-use App\Mail\VerificationCodeMail;
 use App\Models\User;
 use App\Services\VerificationService;
 use App\Models\Account;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\RateLimiter; 
 use Illuminate\Support\Str;
@@ -44,9 +41,7 @@ class AuthController extends Controller
     public function verify(VerifyRequest $request): JsonResponse
     {
         $cacheKey = 'verification_code_'.$request->user_id;
-        $cachedOtp = Cache::get($cacheKey);
-
-        if (! $cachedOtp || $cachedOtp != $request->code) {
+        if (! $this->verificationService->validateOtp($cacheKey, $request->code)) {
             return response()->json(['message' => 'Invalid or expired verification code.'], 400);
         }
 

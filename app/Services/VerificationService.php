@@ -34,8 +34,12 @@ class VerificationService
      * @param string $expectedOtp The expected OTP code to validate against
      * @return bool True if the OTP codes match, false otherwise
      */
-    public function validateOtp(string $inputOtp, string $expectedOtp): bool
+    public function validateOtp(string $cacheKey, string $expectedOtp): bool
     {
-        return hash_equals($expectedOtp, $inputOtp);
+        $inputOtp = Cache::get($cacheKey);
+         if (! $inputOtp || $inputOtp != $expectedOtp) {
+            return false;
+        }
+        return true;
     }
 }   
