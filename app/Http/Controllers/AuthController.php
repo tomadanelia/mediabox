@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\VerifyRequest;
 use Illuminate\Http\Request;
 use App\Mail\VerificationCodeMail;
 use App\Models\User;
+use App\Services\VerificationService;
 use App\Models\Account;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
@@ -17,7 +18,11 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\RateLimiter; 
 use Illuminate\Support\Str;
 class AuthController extends Controller
+
 {
+    public function __construct(
+        private VerificationService $verificationService,
+    ) {}
     public function register(RegisterRequest $request): JsonResponse
     {
         $user = User::create([
@@ -27,18 +32,8 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'full_name' => $request->full_name,
         ]);
-
-        $otp = rand(100000, 999999);
-
-        Cache::put('verification_code_'.$user->id, $otp, 300);
-
-        if ($user->email) {
-            Mail::to($user->email)->send(new VerificationCodeMail($otp, $user->username));
-        } elseif ($user->phone) {
-            // SMS logic would go here when implemented
-            Log::info("SMS OTP for {$user->phone}: {$otp}");
-        }
-
+        $otp = $this->verificationService->generateAndSendcode(6,$user);
+        
         return response()->json([
             'message' => 'User registered successfully. Please verify your account.',
             'user_id' => $user->id,
@@ -154,17 +149,9 @@ class AuthController extends Controller
         return response()->json(['message' => 'Please wait before requesting a new code.'], 429);
     }
 
-    $otp = rand(100000, 999999);
-    
-    Cache::put('verification_code_' . $user->id, $otp, 300);
-    
-    Cache::put($cooldownKey, true, 60);
+    $otp = $this->verificationService->generateAndSendcode(6, $user);
 
-    if ($user->email) {
-        Mail::to($user->email)->send(new VerificationCodeMail($otp, $user->username));
-    } elseif ($user->phone) {
-        Log::info("Resent SMS OTP for {$user->phone}: {$otp}");
-    }
+    Cache::put($cooldownKey, true, 60);
 
     return response()->json([
         'message' => 'Verification code sent.',
