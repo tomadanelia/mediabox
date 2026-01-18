@@ -51,7 +51,7 @@ class VerificationService
      * @param int $userId User ID
      * @return void
      */
-    public function clearOtp(int $userId): void
+    public function clearOtp(string $userId): void
     {
         Cache::forget('verification_code_' . $userId);
     }
