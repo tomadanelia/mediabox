@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\HasUuid;
+use App\Models\ChannelCategory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Channel extends Model
 {
@@ -30,4 +32,8 @@ class Channel extends Model
         'is_vip_only' => 'boolean',
         'view_count' => 'integer',
     ];
+    public function category()
+    {
+        return $this->belongsTo(ChannelCategory::class, 'category_id');
+    }
 }
