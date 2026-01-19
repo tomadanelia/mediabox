@@ -50,7 +50,7 @@ class SyncingService
     }
 }
     /**
-     * Gets livestream url from cache or fetches it from MediaBox API and caches it for 1 hour
+     * Gets livestream url from cache or fetches it from MediaBox API adds  returns and caches it for 1 hour
      * params: externalId - Channel external ID
      * return: array|null - ['url' => string, 'expires_at' => int, 'server_time' => int] or null on failure
      */
@@ -68,9 +68,16 @@ class SyncingService
 
             if ($response->successful()) {
                 $data = $response->json();
-                
+                $rawUrl = $data['URL'] ?? null;
+
+                if (!$rawUrl) {
+                    return null;
+                }
+                 $appUrl = config('app.url');
+                 $proxyUrl = $appUrl . '/stream-proxy/' . $rawUrl;
+
                 return [
-                    'url' => $data['URL'] ?? null,
+                    'url' => $proxyUrl,
                     'expires_at' => $data['END'] ?? null,
                     'server_time' => now()->timestamp
                 ];
