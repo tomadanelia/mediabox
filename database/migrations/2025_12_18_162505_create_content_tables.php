@@ -33,7 +33,7 @@ return new class extends Migration
             $table->string('icon_url')->nullable(); 
             $table->foreignUuid('category_id')->nullable()->constrained('channel_categories')->onDelete('set null');
             $table->boolean('is_active')->default(true);
-            $table->boolean('is_vip_only')->default(false); 
+            $table->string('access_level')->default('free'); 
             $table->unsignedBigInteger('view_count')->default(0);
             
             $table->timestamps();
