@@ -6,10 +6,13 @@ use App\Models\Channel;
 use App\Services\SyncingService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-
+use App\Services\GrantAccessService;
 class ChannelController extends Controller
 {
-    public function __construct(protected SyncingService $syncing_service) {}
+    public function __construct(
+        protected SyncingService $syncing_service,
+        protected GrantStreamAccessService $access_service,
+    ) {}
 
     public function getChannelFacade(): JsonResponse
     {
@@ -29,12 +32,30 @@ class ChannelController extends Controller
     }
     public function getStreamUrl($id,Request $request):JsonResponse
     {
-    $data=$this->syncing_service->getStreamUrl($id);
+     $channel = Channel::findOrFail($id);
 
-    if (!$data || !$data['url']) {
-            return response()->json(['message' => 'Stream unavailable'], 404);
-        }
+    $user = Auth::guard('sanctum')->user();
+    $allowedPlan=$channel->access_level;
+    if ($allowedPlan==="free") {
+        $data = $this->syncing_service->getStreamUrl($channel->external_id);
+        return response()->json($data);
+    }
+
+    if (!$user) {
+        return response()->json(['message' => 'Login required for this channel'], 401);
+    }
+
+    $userPlan = $user->getActivePlanName(); 
+
+    if (!$userPlan || $userPlan!==$allowedPlan) {
+        return response()->json([
+            'message' => 'Upgrade to ' . implode(' or ', $allowedPlan) . ' to watch this channel'
+        ], 403);
+    }
+
+    $data = $this->syncing_service->getStreamUrl($channel->external_id);
     return response()->json($data);
+
 
     }
     
