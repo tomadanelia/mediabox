@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\HasUuid;
 use App\Models\ChannelCategory;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Channel extends Model
 {
@@ -22,14 +21,13 @@ class Channel extends Model
         'icon_url',
         'category_id',
         'is_active',
-        'is_vip_only',
+        'access_level',
         'view_count'
     ];
 
 
     protected $casts = [
         'is_active' => 'boolean',
-        'is_vip_only' => 'boolean',
         'view_count' => 'integer',
     ];
     public function category()
