@@ -6,12 +6,10 @@ use App\Models\Channel;
 use App\Services\SyncingService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use App\Services\GrantAccessService;
 class ChannelController extends Controller
 {
     public function __construct(
-        protected SyncingService $syncing_service,
-        protected GrantStreamAccessService $access_service,
+        protected SyncingService $syncing_service
     ) {}
 
     public function getChannelFacade(): JsonResponse
