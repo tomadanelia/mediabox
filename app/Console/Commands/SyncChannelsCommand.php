@@ -43,7 +43,7 @@ class SyncChannelsCommand extends Command
                     'icon_url' => $remote['CHANNEL_LOGO'],
                     'category_id' => $category->id,
                     'is_active' => $remote['STATUS'] == "1",
-                    'is_vip_only' => $remote['FREE'] != "1", 
+                    'access_level' => $remote['FREE'] == "1" ? "free" : "premium", 
                 ]
             );
             $count++;
