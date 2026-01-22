@@ -57,17 +57,30 @@ class AuthController extends Controller
 
         $this->verificationService->clearOtp($user->id);
 
-        $token = $user->createToken('pre_subscription_token', ['view:free'])->plainTextToken;
+       
         Account::create([
             'user_id' => $user->id,
             'balance' => 0,
         ]);
+        if ($request->client === 'mobile') {
+        $token = $user->createToken(
+            'pre_subscription_token',
+            ['view:free']
+        )->plainTextToken;
+
         return response()->json([
             'message' => 'Account verified successfully.',
             'access_token' => $token,
             'token_type' => 'Bearer',
             'user' => $user,
         ]);
+    }
+         Auth::login($user);
+
+    return response()->json([
+        'message' => 'Account verified successfully.',
+        'user' => $user,
+    ]);
     }
 
     public function login(LoginRequest $request): JsonResponse
@@ -101,15 +114,29 @@ class AuthController extends Controller
         RateLimiter::clear($throttleKey);
 
 
-        $abilities = match ($user->role) {
-            'admin' => ['*'],
-            'subscriber' => ['view:premium'],
-            'free' => ['view:free'],
-            default => ['view:free'],
-        };
+        if($request->client === 'mobile') {
+            $userPlan = $user->getActivePlanName();
+            if ($userPlan === 'Premium') {
+                $abilities = ['view:free', 'view:premium'];
+            } else if ($userPlan === 'pro') {
+                $abilities = ['view:free', 'view:pro'];
+            } else {
+                $abilities = ['view:free'];
+            }
+        } else {
+            Auth::login($user);
+            return response()->json([
+                'message' => 'Login successful',
+                'user' => $user,
+            ]);
+        }
         $user->tokens()
        ->where('name', 'pre_subscription_token')
        ->delete();
+       $user->tokens()
+       ->where('name', 'auth_token')
+       ->delete();
+
 
 
         $token = $user->createToken('auth_token', $abilities)->plainTextToken;
