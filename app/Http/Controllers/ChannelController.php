@@ -40,7 +40,7 @@ class ChannelController extends Controller
     
      public function programs($id, Request $request): JsonResponse
     {
-        $date = $request->input('date', now()->format('Y-m-d'));
+        $date = $request->input('date', now()->toDateString());
         
         $epg = $this->syncing_service->getEpg($id, $date);
 

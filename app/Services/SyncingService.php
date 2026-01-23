@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class SyncingService
 {
@@ -89,18 +90,38 @@ class SyncingService
 
     /**
      * Get EPG (Cached for 1 hour)
-     * MOCKED waiting for akaki's API
      */
     public function getEpg(string $externalId, string $date): array
-    {
-        $key = "channel_epg_{$externalId}_{$date}";
+{
+    $start = Carbon::parse($date)->startOfDay()->timestamp;
+    $end   = Carbon::parse($date)->endOfDay()->timestamp;
 
-        return Cache::remember($key, 3600, function () use ($externalId, $date) {
-            return [
-                ['time' => '20:00', 'title' => 'Program Data Pending', 'duration' => 60]
-            ];
-        });
-    }
+    $key = "channel_epg_{$externalId}_{$start}_{$end}";
+
+    return Cache::remember($key, 3600, function () use ($externalId, $start, $end) {
+
+        $response = Http::withoutVerifying()->withHeaders($this->headers)
+        ->post('https://222.mediabox.ge/webapi', [
+            'Method' => 'LoadEpgData',
+            'Pars' => [
+                'CHANNEL_ID' => (int) $externalId,
+                'TIME_START' => $start,
+                'TIME_END'   => $end,
+            ],
+        ]);
+
+       if (!$response->successful()) {
+            return []; 
+        }
+
+        try {
+            $data = $response->json(); 
+            return is_array($data) ? $data : []; 
+        } catch (\Illuminate\Http\Client\RequestException $e) {
+            return []; 
+        }
+    });
+}
 
     /**
      * Get Archive URL (Cached for 6 hours)
