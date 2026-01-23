@@ -71,17 +71,17 @@ class SyncingService
                 $data = $response->json();
                 $rawUrl = $data['URL'] ?? null;
 
-                if (!$rawUrl) {
-                    return null;
-                }
-                 $appUrl = config('app.url');
-                 $proxyUrl = $appUrl . '/stream-proxy/' . $rawUrl;
+                if ($rawUrl) {
+                $parsed = parse_url($rawUrl);
+                $pathAndQuery = $parsed['path'] . ($parsed['query'] ? '?' . $parsed['query'] : '');
+                $proxyUrl = config('app.url') . '/stream-proxy/' . ltrim($pathAndQuery, '/');
 
                 return [
                     'url' => $proxyUrl,
                     'expires_at' => $data['END'] ?? null,
                     'server_time' => now()->timestamp
                 ];
+                }
             }
 
             return null;
