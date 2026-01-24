@@ -23,4 +23,8 @@ class SubscriptionPlan extends Model
         'duration_days'=>'integer',
         'is_active'=>'boolean',
     ];
+     public function channels()
+    {
+        return $this->belongsToMany(Channel::class, 'channel_subscription_plan', 'plan_id', 'channel_id');
+    }
 }

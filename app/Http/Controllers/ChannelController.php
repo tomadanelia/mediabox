@@ -23,7 +23,8 @@ class ChannelController extends Controller
                     'uuid' => $channel->id,       
                     'name' => $channel->name_ka,   
                     'logo' => $channel->icon_url,
-                    'number' => $channel->number
+                    'number' => $channel->number,
+                    "category"=>$channel->category?->name_en ?? null,
                 ];
             });
         return response()->json($channels);
@@ -78,5 +79,35 @@ class ChannelController extends Controller
 
         return response()->json($archiveData);
     }
+    private function canAccessChannel(Channel $channel): bool
+{
+    if ($channel->is_free) {
+        return true;
+    }
+
+    $user = Auth::guard('sanctum')->user();
+    if (!$user) {
+        return false;
+    }
+
+    
+    $requiredPlanIds = \Illuminate\Support\Facades\Cache::remember(
+        "channel_plans_{$channel->id}", 
+        300, 
+        fn() => $channel->plans()->pluck('id')->toArray()
+    );
+
+    // If channel is not free but has no plans assigned, nobody can watch it (fail-safe)
+    if (empty($requiredPlanIds)) {
+        return false;
+    }
+
+    // Get User's active plan IDs
+    $userPlanIds = $user->getActivePlanIds();
+
+    // 5. Intersection
+    // If the user has ANY of the plans required by the channel, allow access.
+    return !empty(array_intersect($requiredPlanIds, $userPlanIds));
+}
 
 }

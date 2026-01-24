@@ -48,6 +48,13 @@ class User extends Authenticatable
             ->wherePivot('expires_at', '>', now())
             ->value('name_en'); 
     });
+}   public function getActivePlanIds(): array
+{
+    return $this->subscriptionPlans()
+        ->wherePivot('is_active', true)
+        ->wherePivot('expires_at', '>', now())
+        ->pluck('subscription_plans.id') 
+        ->toArray();
 }
     public function account()
 {
