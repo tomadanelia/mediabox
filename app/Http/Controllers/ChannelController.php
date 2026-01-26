@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Illuminate\Support\Facades\Auth;
 use App\Models\Channel;
 use App\Services\SyncingService;
 use Illuminate\Http\Request;
@@ -32,24 +32,26 @@ class ChannelController extends Controller
     public function getStreamUrl($id,Request $request):JsonResponse
     {
      $channel = Channel::findOrFail($id);
+    if ($channel->is_free) {
+            $data = $this->syncing_service->getStreamUrl($channel->external_id);
+            return response()->json($data);
+     }
 
     $user = Auth::guard('sanctum')->user();
-    $allowedPlan=$channel->access_level;
-    if ($allowedPlan==="free") {
-        $data = $this->syncing_service->getStreamUrl($channel->external_id);
-        return response()->json($data);
-    }
-
     if (!$user) {
         return response()->json(['message' => 'Login required for this channel'], 401);
     }
 
-    $userPlan = $user->getActivePlanName(); 
+    $requiredPlanIds =  $channel->getRequiredPlanIds();
 
-    if (!$userPlan || $userPlan!==$allowedPlan) {
-        return response()->json([
-            'message' => 'Upgrade to ' . implode(' or ', $allowedPlan) . ' to watch this channel'
-        ], 403);
+        if (empty($requiredPlanIds)) {
+             return response()->json(['message' => 'Channel is currently unavailable (No plan assigned)'], 403);
+        }
+
+    $userPlan = $user->getActivePlanIds(); 
+
+    if (!$userPlan || !array_intersect($userPlan, $requiredPlanIds)) {
+        return response()->json($requiredPlanIds[0], 403);
     }
 
     $data = $this->syncing_service->getStreamUrl($channel->external_id);
@@ -97,16 +99,10 @@ class ChannelController extends Controller
         fn() => $channel->plans()->pluck('id')->toArray()
     );
 
-    // If channel is not free but has no plans assigned, nobody can watch it (fail-safe)
     if (empty($requiredPlanIds)) {
         return false;
     }
-
-    // Get User's active plan IDs
     $userPlanIds = $user->getActivePlanIds();
-
-    // 5. Intersection
-    // If the user has ANY of the plans required by the channel, allow access.
     return !empty(array_intersect($requiredPlanIds, $userPlanIds));
 }
 

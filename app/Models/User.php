@@ -40,22 +40,21 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
-  public function getActivePlanName(): ?string
+    public function getActivePlanIds(): ?array
 {
-    return Cache::remember("user_plan_{$this->id}", 300, function() {
-       return $this->subscriptionPlans()
-            ->wherePivot('is_active', true)
-            ->wherePivot('expires_at', '>', now())
-            ->value('name_en'); 
-    });
-}   public function getActivePlanIds(): array
-{
+    return Cache::remember("user_plan_ids_{$this->id}", 300, function(){
     return $this->subscriptionPlans()
         ->wherePivot('is_active', true)
         ->wherePivot('expires_at', '>', now())
         ->pluck('subscription_plans.id') 
         ->toArray();
+    });
 }
+    public function isAdmin(): bool
+{
+    return $this->role === 'admin';
+}
+
     public function account()
 {
     return $this->hasOne(Account::class);

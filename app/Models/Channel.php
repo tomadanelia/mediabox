@@ -31,6 +31,12 @@ class Channel extends Model
         'is_free' => 'boolean',
         'view_count' => 'integer',
     ];
+    public function getRequiredPlanIds(): ?array
+    {
+         return Cache::remember("channel_plans_{$this->id}", 3600, function() {
+            return $this->plans()->pluck('subscription_plans.id')->toArray();
+        });
+    }
     public function category()
     {
         return $this->belongsTo(ChannelCategory::class, 'category_id');
