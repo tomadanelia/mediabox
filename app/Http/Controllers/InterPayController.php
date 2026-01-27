@@ -13,6 +13,9 @@ class InterPayController extends Controller
 
     public function handle(InterPayRequest $request)
     {
+        if ($request->isMethod('get') && $request->input('OP') !== 'debt') {
+              abort(405, 'invalid method for this operation');
+        }
         return match ($request->input('OP')) {
             'debt' => $this->checkBalance->showBalance($request),
             'paysuccess' => $this->creditBalance->increaseBalance($request),
