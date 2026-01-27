@@ -71,13 +71,7 @@ class ChannelController extends Controller
 
     public function archive($id, Request $request): JsonResponse
     {
-        $timestamp = $request->input('timestamp');
-
-        if (!$timestamp) {
-            return response()->json(['message' => 'Timestamp required'], 400);
-        }
-
-        $archiveData = $this->syncing_service->getArchiveUrl($id, (int)$timestamp);
+        $archiveData = $this->syncing_service->getArchiveUrl($id);
 
         return response()->json($archiveData);
     }
