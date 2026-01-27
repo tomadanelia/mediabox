@@ -127,12 +127,28 @@ class SyncingService
      * Get Archive URL (Cached for 6 hours)
      * PLACEHOLDER -  MOCKED waiting for akaki's API
      */
-    public function getArchiveUrl(string $externalId, int $timestamp): ?array
+    public function getArchiveUrl(string $externalId): ?string
     {
-        
-        return [
-            'url' => "https://proxy.streamer.mediabox.ge/archive/{$externalId}/{$timestamp}.m3u8",
-            'start' => $timestamp
-        ];
+     return Cache::remember("channel_archive_link{$externalId}", 21600, function () use ($externalId) {
+        $response = Http::withHeaders([
+         'Accept' => 'application/json',
+            'Content-Type' => 'application/json',
+            'Cache-Control' => 'no-cache',
+            'Origin' => 'https://222.mediabox.ge',
+            'Referer' => 'https://222.mediabox.ge/',
+            'User-Agent' => 'PostmanRuntime/7.51.0', 
+    ])->post('https://222.mediabox.ge/webapi', [
+        'Method' => 'GetArchiveStream',
+        'Pars' => [
+            'CHANNEL_ID' => (int) $externalId,
+        ],
+        'urltype' => 'flussonic',
+    ]);
+      if (!$response->successful()) {
+        return null;
+        }
+        $steamLink= $response->json();
+        return $steamLink['URL'] ?? null;
+     });
     }
 }
