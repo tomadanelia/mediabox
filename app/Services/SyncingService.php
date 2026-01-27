@@ -130,7 +130,7 @@ class SyncingService
     public function getArchiveUrl(string $externalId): ?string
     {
      return Cache::remember("channel_archive_link{$externalId}", 21600, function () use ($externalId) {
-        $response = Http::withHeaders([
+        $response = Http::withoutVerifying()->withHeaders([
          'Accept' => 'application/json',
             'Content-Type' => 'application/json',
             'Cache-Control' => 'no-cache',
