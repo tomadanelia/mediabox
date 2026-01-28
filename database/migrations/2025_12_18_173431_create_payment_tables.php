@@ -25,10 +25,8 @@ return new class extends Migration
         $table->uuid('id')->primary();
         $table->foreignUuid('user_id')->constrained('users')->onDelete('cascade');
         $table->foreignUuid('plan_id')->constrained('subscription_plans');
-        
-        $table->string('transaction_reference')->unique(); // The ID from the Bank Hook
         $table->decimal('amount', 10, 2);
-        $table->string('currency')->default('Lari');
+        $table->string('currency')->default('Gel');
         $table->string('status')->default('pending'); 
         $table->string('payment_method')->nullable(); 
         $table->json('metadata')->nullable(); 
@@ -50,9 +48,11 @@ return new class extends Migration
     });
 }
 
-   
-    public function down(): void
-    {
-        Schema::dropIfExists('payment_tables');
-    }
+public function down(): void
+{
+    Schema::dropIfExists('user_subscriptions');
+    Schema::dropIfExists('payment_transactions');
+    Schema::dropIfExists('subscription_plans');
+}
+
 };

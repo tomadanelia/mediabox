@@ -18,8 +18,6 @@ return new class extends Migration
         $table->string('full_name')->nullable();
         $table->string('avatar_url')->nullable();
         $table->string('role')->default('user'); 
-        $table->string('subscription_status')->default('free'); 
-        $table->timestamp('subscription_expires_at')->nullable();
         $table->timestamp('email_verified_at')->nullable();
         $table->timestamp('phone_verified_at')->nullable();
         $table->timestamps(); 
