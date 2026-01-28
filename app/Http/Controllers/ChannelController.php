@@ -14,7 +14,8 @@ class ChannelController extends Controller
 
     public function getChannelFacade(): JsonResponse
     {
-        $channels = Channel::where('is_active', true)
+        $channels = Channel::with('category')
+        ->where('is_active', true)
             ->orderBy('number', 'asc') 
             ->get()
             ->map(function ($channel) {
