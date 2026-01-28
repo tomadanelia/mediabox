@@ -29,39 +29,24 @@ class ChannelController extends Controller
             });
         return response()->json($channels);
     }
+
     public function getStreamUrl($id,Request $request):JsonResponse
     {
      $channel = Channel::findOrFail($id);
-    if ($channel->is_free) {
-            $data = $this->syncing_service->getStreamUrl($channel->external_id);
-            return response()->json($data);
-     }
-
-    $user = Auth::guard('sanctum')->user();
-    if (!$user) {
-        return response()->json(['message' => 'Login required for this channel'], 401);
+    if (!$this->canAccessChannel($channel)) {
+        $user = Auth::guard('sanctum')->user();
+        $status = $user ? 403 : 401;
+        $message = $user ? 'Subscription required' : 'Login required';
+        return response()->json(['message' => $message], $status);
     }
-
-    $requiredPlanIds =  $channel->getRequiredPlanIds();
-
-        if (empty($requiredPlanIds)) {
-             return response()->json(['message' => 'Channel is currently unavailable (No plan assigned)'], 403);
-        }
-
-    $userPlan = $user->getActivePlanIds(); 
-
-    if (!$userPlan || !array_intersect($userPlan, $requiredPlanIds)) {
-        return response()->json($requiredPlanIds[0], 403);
-    }
-
-    $data = $this->syncing_service->getStreamUrl($channel->external_id);
+    $data = $this->syncing_service->getStreamUrl($id);
     return response()->json($data);
-
 
     }
     
-     public function programs($id, Request $request): JsonResponse
+    public function programs($id, Request $request): JsonResponse
     {
+
         $date = $request->input('date', now()->toDateString());
         
         $epg = $this->syncing_service->getEpg($id, $date);
@@ -71,6 +56,10 @@ class ChannelController extends Controller
 
     public function archive($id, Request $request): JsonResponse
     {
+        $access = $this->canAccessChannel(Channel::findOrFail($id));
+        if (!$access) {
+            return response()->json(['message' => 'Subscription required'], 403);
+        }
         $archiveData = $this->syncing_service->getArchiveUrl($id);
 
         return response()->json($archiveData);
@@ -87,11 +76,7 @@ class ChannelController extends Controller
     }
 
     
-    $requiredPlanIds = \Illuminate\Support\Facades\Cache::remember(
-        "channel_plans_{$channel->id}", 
-        300, 
-        fn() => $channel->plans()->pluck('id')->toArray()
-    );
+    $requiredPlanIds = $channel->getRequiredPlanIds();
 
     if (empty($requiredPlanIds)) {
         return false;

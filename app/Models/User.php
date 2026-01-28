@@ -10,6 +10,7 @@ use App\Traits\HasUuid;
 use App\Models\Account;
 use App\Models\SubscriptionPlan;
 use Illuminate\Support\Facades\Cache;
+use App\Models\UserSubscription;
 
 
 class User extends Authenticatable
@@ -44,11 +45,11 @@ class User extends Authenticatable
 {
     return Cache::remember("user_plan_ids_{$this->id}", 300, function(){
     return $this->subscriptionPlans()
-        ->wherePivot('is_active', true)
-        ->wherePivot('expires_at', '>', now())
-        ->pluck('subscription_plans.id') 
-        ->toArray();
-    });
+            ->wherePivot('is_active', true)
+            ->wherePivot('expires_at', '>', now())
+            ->pluck('subscription_plans.id')
+            ->toArray();
+  });
 }
     public function isAdmin(): bool
 {

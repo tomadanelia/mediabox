@@ -5,7 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\HasUuid;
 use App\Models\ChannelCategory;
-
+use Illuminate\Support\Facades\Cache;
+use App\Models\SubscriptionPlan;
 class Channel extends Model
 {
     use HasUuid;
@@ -31,7 +32,7 @@ class Channel extends Model
         'is_free' => 'boolean',
         'view_count' => 'integer',
     ];
-    public function getRequiredPlanIds(): ?array
+    public function getRequiredPlanIds(): array
     {
          return Cache::remember("channel_plans_{$this->id}", 3600, function() {
             return $this->plans()->pluck('subscription_plans.id')->toArray();

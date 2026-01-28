@@ -115,13 +115,9 @@ class AuthController extends Controller
 
 
         if($request->client === 'mobile') {
-            $userPlan = $user->getActivePlanName();
-            if ($userPlan === 'Premium') {
-                $abilities = ['view:free', 'view:premium'];
-            } else if ($userPlan === 'pro') {
-                $abilities = ['view:free', 'view:pro'];
-            } else {
-                $abilities = ['view:free'];
+            $userPlanIds = $user->getActivePlanIds();
+            if ($userPlanIds !== []) {
+                $abilities = ['view:free', 'view:' . implode(',', $userPlanIds)];
             }
         } else {
             Auth::login($user);
