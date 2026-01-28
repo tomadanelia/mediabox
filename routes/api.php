@@ -22,5 +22,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+    Route::get('/plans', [SubscriptionController::class, 'index']);
+    Route::post('/plans/purchase', [SubscriptionController::class, 'purchase']);
 });
 
