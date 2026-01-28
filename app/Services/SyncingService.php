@@ -86,7 +86,7 @@ class SyncingService
 
             return null;
         });
-    }
+    }//i have to fix cache ttl to make it same as token end time
 
     /**
      * Get EPG (Cached for 1 hour)
@@ -127,9 +127,9 @@ class SyncingService
      * Get Archive URL (Cached for 6 hours)
      * PLACEHOLDER -  MOCKED waiting for akaki's API
      */
-    public function getArchiveUrl(string $externalId): ?string
+    public function getArchiveUrl(string $externalId,int $startEpoch): ?array
     {
-     return Cache::remember("channel_archive_link{$externalId}", 21600, function () use ($externalId) {
+     $baseData = Cache::remember("channel_archive_base_{$externalId}", 3000, function () use ($externalId) {
         $response = Http::withoutVerifying()->withHeaders([
          'Accept' => 'application/json',
             'Content-Type' => 'application/json',
@@ -147,8 +147,30 @@ class SyncingService
       if (!$response->successful()) {
         return null;
         }
-        $steamLink= $response->json();
-        return $steamLink['URL'] ?? null;
+         return $response->json();
      });
+     if (!$baseData || empty($baseData['URL'])) {
+            return null;
+        }
+
+        $rawUrl = $baseData['URL']; 
+        
+        $parsed = parse_url($rawUrl);
+        $pathParts = explode('/', $parsed['path']);
+        array_pop($pathParts); 
+        $basePath = implode('/', $pathParts);
+
+        $timeshiftFile = "video-timeshift_abs-{$startEpoch}.m3u8";
+        
+        $newPath = $basePath . '/' . $timeshiftFile;
+
+        $query = $parsed['query'] ?? '';
+        $proxyPath = $newPath . ($query ? '?' . $query : '');
+        
+        $finalUrl = config('app.url') . '/stream-proxy' . $proxyPath;
+
+        return [
+            'url' => $finalUrl
+        ];
     }
 }

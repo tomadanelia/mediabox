@@ -57,14 +57,29 @@ class ChannelController extends Controller
 
     public function archive($id, Request $request): JsonResponse
     {
-        $access = $this->canAccessChannel(Channel::findOrFail($id));
-        if (!$access) {
-            return response()->json(['message' => 'Subscription required'], 403);
+        $timestamp = $request->input('timestamp');
+
+        if (!$timestamp) {
+            return response()->json(['message' => 'Timestamp required'], 400);
         }
-        $archiveData = $this->syncing_service->getArchiveUrl($id);
+        $channel = Channel::where('external_id', $id)->first();
+        $access = $this->canAccessChannel($channel);
+        if (!$access) {
+            $user = Auth::guard('sanctum')->user();
+            $status = $user ? 403 : 401;
+            $message = $user ? 'Subscription required' : 'Login required';
+            return response()->json(['message' => $message], $status);
+        }
+        
+        $archiveData = $this->syncing_service->getArchiveUrl($channel->external_id, (int)$timestamp);
+
+        if (!$archiveData) {
+             return response()->json(['message' => 'Archive unavailable'], 404);
+        }
 
         return response()->json($archiveData);
     }
+    
     private function canAccessChannel(Channel $channel): bool
 {
     if ($channel->is_free) {
