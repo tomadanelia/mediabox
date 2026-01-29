@@ -31,22 +31,12 @@ class SyncingService
         ])->post($this->baseUrl, [
             'Method' => 'GetChannelList'
         ]);
-
-        dump('Request URL: ' . $this->baseUrl);
-        dump('Request Body: ' . json_encode(['Method' => 'GetChannelList']));
-        dump('Response Status: ' . $response->status());
-        dump('Response Headers: ' . json_encode($response->headers()));
-        dump('Response Body: ' . $response->body());
-
         if ($response->successful()) {
             return $response->json();
         }
         
-        dump('API Error: ' . $response->status() . ' - ' . $response->body());
         return [];
     } catch (\Exception $e) {
-        dump('Exception: ' . $e->getMessage());
-        dump('Exception Trace: ' . $e->getTraceAsString());
         return [];
     }
 }
