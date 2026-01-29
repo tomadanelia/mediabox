@@ -33,14 +33,14 @@ class ChannelController extends Controller
 
     public function getStreamUrl($id,Request $request):JsonResponse
     {
-     $channel = Channel::findOrFail($id);
+    $channel = Channel::where('external_id', $id)->firstOrFail();
     if (!$this->canAccessChannel($channel)) {
         $user = Auth::guard('sanctum')->user();
         $status = $user ? 403 : 401;
         $message = $user ? 'Subscription required' : 'Login required';
         return response()->json(['message' => $message], $status);
     }
-    $data = $this->syncing_service->getStreamUrl($id);
+    $data = $this->syncing_service->getStreamUrl($channel->external_id);
     return response()->json($data);
 
     }
@@ -48,11 +48,13 @@ class ChannelController extends Controller
     public function programs($id, Request $request): JsonResponse
     {
 
-        $date = $request->input('date', now()->toDateString());
-        
-        $epg = $this->syncing_service->getEpg($id, $date);
+     $channel = Channel::where('external_id', $id)->firstOrFail();
 
-        return response()->json($epg);
+    $date = $request->input('date', now()->toDateString());
+
+    return response()->json(
+        $this->syncing_service->getEpg($channel->external_id, $date)
+    );
     }
 
     public function archive($id, Request $request): JsonResponse
@@ -62,7 +64,7 @@ class ChannelController extends Controller
         if (!$timestamp) {
             return response()->json(['message' => 'Timestamp required'], 400);
         }
-        $channel = Channel::where('external_id', $id)->first();
+        $channel = Channel::where('external_id', $id)->firstOrFail();
         $access = $this->canAccessChannel($channel);
         if (!$access) {
             $user = Auth::guard('sanctum')->user();
