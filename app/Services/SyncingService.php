@@ -167,7 +167,7 @@ class SyncingService
         $query = $parsed['query'] ?? '';
         $proxyPath = $newPath . ($query ? '?' . $query : '');
         
-        $finalUrl = config('app.url') . '/stream-proxy' . $proxyPath;
+        $finalUrl = config('app.url') . '/archive-proxy' . $proxyPath;
 
         return [
             'url' => $finalUrl
