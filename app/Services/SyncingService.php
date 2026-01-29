@@ -142,7 +142,11 @@ class SyncingService
      if (!$baseData || empty($baseData['URL'])) {
             return null;
         }
-
+        $dateTodayEpoch = Carbon::now()->timestamp;
+        $archiveLength = $baseData['ARCHIVE_LENGTH'] ?? 0;
+        if ($dateTodayEpoch-$startEpoch>$archiveLength*3600) {
+            return null;
+        }
         $rawUrl = $baseData['URL']; 
         
         $parsed = parse_url($rawUrl);
