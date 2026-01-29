@@ -31,22 +31,12 @@ class SyncingService
         ])->post($this->baseUrl, [
             'Method' => 'GetChannelList'
         ]);
-
-        dump('Request URL: ' . $this->baseUrl);
-        dump('Request Body: ' . json_encode(['Method' => 'GetChannelList']));
-        dump('Response Status: ' . $response->status());
-        dump('Response Headers: ' . json_encode($response->headers()));
-        dump('Response Body: ' . $response->body());
-
         if ($response->successful()) {
             return $response->json();
         }
         
-        dump('API Error: ' . $response->status() . ' - ' . $response->body());
         return [];
     } catch (\Exception $e) {
-        dump('Exception: ' . $e->getMessage());
-        dump('Exception Trace: ' . $e->getTraceAsString());
         return [];
     }
 }
@@ -86,7 +76,7 @@ class SyncingService
 
             return null;
         });
-    }
+    }//i have to fix cache ttl to make it same as token end time
 
     /**
      * Get EPG (Cached for 1 hour)
@@ -127,12 +117,50 @@ class SyncingService
      * Get Archive URL (Cached for 6 hours)
      * PLACEHOLDER -  MOCKED waiting for akaki's API
      */
-    public function getArchiveUrl(string $externalId, int $timestamp): ?array
+    public function getArchiveUrl(string $externalId,int $startEpoch): ?array
     {
+     $baseData = Cache::remember("channel_archive_base_{$externalId}", 3000, function () use ($externalId) {
+        $response = Http::withoutVerifying()->withHeaders([
+         'Accept' => 'application/json',
+            'Content-Type' => 'application/json',
+            'Cache-Control' => 'no-cache',
+            'Origin' => 'https://222.mediabox.ge',
+            'Referer' => 'https://222.mediabox.ge/',
+            'User-Agent' => 'PostmanRuntime/7.51.0', 
+    ])->post('https://222.mediabox.ge/webapi', [
+        'Method' => 'GetArchiveStream',
+        'Pars' => [
+            'CHANNEL_ID' => (int) $externalId,
+        ],
+        'urltype' => 'flussonic',
+    ]);
+      if (!$response->successful()) {
+        return null;
+        }
+         return $response->json();
+     });
+     if (!$baseData || empty($baseData['URL'])) {
+            return null;
+        }
+
+        $rawUrl = $baseData['URL']; 
         
+        $parsed = parse_url($rawUrl);
+        $pathParts = explode('/', $parsed['path']);
+        array_pop($pathParts); 
+        $basePath = implode('/', $pathParts);
+
+        $timeshiftFile = "video-timeshift_abs-{$startEpoch}.m3u8";
+        
+        $newPath = $basePath . '/' . $timeshiftFile;
+
+        $query = $parsed['query'] ?? '';
+        $proxyPath = $newPath . ($query ? '?' . $query : '');
+        
+        $finalUrl = config('app.url') . '/archive-proxy' . $proxyPath;
+
         return [
-            'url' => "https://proxy.streamer.mediabox.ge/archive/{$externalId}/{$timestamp}.m3u8",
-            'start' => $timestamp
+            'url' => $finalUrl
         ];
     }
 }

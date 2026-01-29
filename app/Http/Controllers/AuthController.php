@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\VerificationService;
 use App\Models\Account;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -57,11 +58,13 @@ class AuthController extends Controller
 
         $this->verificationService->clearOtp($user->id);
 
-        $token = $user->createToken('pre_subscription_token', ['view:free'])->plainTextToken;
-        Account::create([
-            'user_id' => $user->id,
-            'balance' => 0,
-        ]);
+
+
+        Account::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
+        if ($request->client === 'mobile') {
+        $user->tokens()->delete();
+        $token = $user->createToken('mobile_app')->plainTextToken;
+
         return response()->json([
             'message' => 'Account verified successfully.',
             'access_token' => $token,
@@ -69,11 +72,20 @@ class AuthController extends Controller
             'user' => $user,
         ]);
     }
+         Auth::login($user);
+         $request->session()->regenerate();
+
+    return response()->json([
+        'message' => 'Account verified successfully.',
+        'user' => $user,
+    ]);
+    }
 
     public function login(LoginRequest $request): JsonResponse
     { 
         // throttle login attempts per email/phone counter till 5 in cache and block for 15 minutes
         $throttleKey = 'login_attempt:' . Str::lower($request->login);
+
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
         $seconds = RateLimiter::availableIn($throttleKey);
         
@@ -101,25 +113,23 @@ class AuthController extends Controller
         RateLimiter::clear($throttleKey);
 
 
-        $abilities = match ($user->role) {
-            'admin' => ['*'],
-            'subscriber' => ['view:premium'],
-            'free' => ['view:free'],
-            default => ['view:free'],
-        };
-        $user->tokens()
-       ->where('name', 'pre_subscription_token')
-       ->delete();
-
-
-        $token = $user->createToken('auth_token', $abilities)->plainTextToken;
-
+        if($request->client === 'mobile') {
+        $user->tokens()->delete();
+        $token = $user->createToken('mobile_app')->plainTextToken;
         return response()->json([
             'message' => 'Login successful',
             'access_token' => $token,
             'token_type' => 'Bearer',
             'user' => $user,
         ]);
+        }
+        Auth::login($user);
+        $request->session()->regenerate();
+        
+    return response()->json([
+        'message' => 'Login successful',
+        'user' => $user,
+    ]);
     }
     public function resendCode(Request $request): JsonResponse
     {
@@ -155,10 +165,15 @@ class AuthController extends Controller
     }
 
 
-    public function logout(): JsonResponse
+    public function logout(Request $request): JsonResponse
     {
-        auth()->user()->currentAccessToken()->delete();
-
-        return response()->json(['message' => 'Logged out successfully']);
+        if ($request->user()->currentAccessToken()) {
+        $request->user()->currentAccessToken()->delete(); 
+    } else {
+        Auth::guard('web')->logout(); 
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+    }
+    return response()->json(['message' => 'Logged out']);
     }
 }
