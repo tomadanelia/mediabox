@@ -11,11 +11,18 @@ class UserPreferencesController
 {
     public function GetFavouriteChannels(Request $request):JsonResponse
     {
-        $user=User::findOrFail($request->userId);
-        $favouriteChannelIds=$user->favouriteChannels()->pluck('external_id');
+        $favouriteChannelIds=$request->user()->favouriteChannels()->pluck('external_id');
         return response()->json([
             'favouriteChannelIds'=>$favouriteChannelIds
         ]);
     
+    }
+    public function AddFavouriteChannel(Request $request):JsonResponse
+    {
+        $channel = Channel::where('external_id', $request->channelId)->firstOrFail();
+        $request->user()->favouriteChannels()->toggle([$channel->id]);
+        return response()->json([
+            'message'=>'Channel added to favourites successfully'
+        ]);
     }
 }
