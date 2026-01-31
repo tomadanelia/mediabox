@@ -57,7 +57,7 @@ class ChannelController extends Controller
             'message' => 'Device limit reached (Max 2). Stop watching on other devices.'
         ], 409);
     }
-    $expires = time() + 300; 
+    $expires = time() + 1800;    
     $ip = $request->ip();
     $secret = config('services.nginx.secure_link_secret'); 
     
@@ -114,7 +114,7 @@ class ChannelController extends Controller
             'message' => 'Device limit reached (Max 2). Stop watching on other devices.'
         ], 409);
     }
-    $expires = time() + 3600; 
+    $expires = time() + 1800; 
     $ip = $request->ip();
     $secret = config('services.nginx.secure_link_secret'); 
     
@@ -148,7 +148,7 @@ class ChannelController extends Controller
     if (empty($requiredPlanIds)) {
         return false;
     }
-    
+
     $userPlanIds = $user->getActivePlanIds();
     return !empty(array_intersect($requiredPlanIds, $userPlanIds));
 }
