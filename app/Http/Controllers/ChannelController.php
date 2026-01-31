@@ -34,15 +34,15 @@ class ChannelController extends Controller
     
     public function getStreamUrl($id,Request $request,ConcurrencyService $concurrency):JsonResponse
     {
-    $request->validate([
-        'timestamp' => 'required|integer|min:0',
-    ]);
     $channel = Channel::where('external_id', $id)->firstOrFail();
     if (!$this->canAccessChannel($channel)) {
         $user = Auth::guard('sanctum')->user();
         $status = $user ? 403 : 401;
         $message = $user ? 'Subscription required' : 'Login required';
         return response()->json(['message' => $message], $status);
+    }
+    if ($channel->is_free){
+        return response()->json($this->syncing_service->getStreamUrl($channel->external_id));
     }
     $request->validate([
         'device_id' => 'required|string|max:64',
@@ -101,6 +101,9 @@ class ChannelController extends Controller
             $message = $user ? 'Subscription required' : 'Login required';
             return response()->json(['message' => $message], $status);
         }
+         if ($channel->is_free){
+        return response()->json($this->syncing_service->getArchiveUrl($channel->external_id, (int)$timestamp));
+    }
        $request->validate([
         'device_id' => 'required|string|max:64',
        ]);
