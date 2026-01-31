@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Channel;
+use App\Services\ConcurrencyService;
 use App\Services\SyncingService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -30,9 +31,12 @@ class ChannelController extends Controller
             });
         return response()->json($channels);
     }
-
-    public function getStreamUrl($id,Request $request):JsonResponse
+    
+    public function getStreamUrl($id,Request $request,ConcurrencyService $concurrency):JsonResponse
     {
+    $request->validate([
+        'timestamp' => 'required|integer|min:0',
+    ]);
     $channel = Channel::where('external_id', $id)->firstOrFail();
     if (!$this->canAccessChannel($channel)) {
         $user = Auth::guard('sanctum')->user();
@@ -40,13 +44,38 @@ class ChannelController extends Controller
         $message = $user ? 'Subscription required' : 'Login required';
         return response()->json(['message' => $message], $status);
     }
-    $data = $this->syncing_service->getStreamUrl($channel->external_id);
-    return response()->json($data);
+    $request->validate([
+        'device_id' => 'required|string|max:64',
+    ]);
+     $allowed = $concurrency->heartbeat(
+        $request->user()->id,
+        $request->input('device_id')
+    );
 
+    if (!$allowed) {
+        return response()->json([
+            'message' => 'Device limit reached (Max 2). Stop watching on other devices.'
+        ], 409);
+    }
+    $expires = time() + 300; 
+    $ip = $request->ip();
+    $secret = config('services.nginx.secure_link_secret'); 
+    
+    $stringToSign = "{$expires}{$ip} {$secret}";
+    $md5 = base64_encode(md5($stringToSign, true));
+    $md5 = str_replace(['+', '/', '='], ['-', '_', ''], $md5);
+    $data = $this->syncing_service->getStreamUrl($channel->external_id);
+    $data['next_heartbeat'] = 240; 
+    return response()->json($data)
+        ->cookie('stream_sign', $md5, 5, null, null, true, true)
+        ->cookie('stream_expires', $expires, 5, null, null, true, true);
     }
     
     public function programs($id, Request $request): JsonResponse
     {
+     $request->validate([
+    'date' => ['nullable', 'date'],
+   ]);
 
      $channel = Channel::where('external_id', $id)->firstOrFail();
 
@@ -57,7 +86,7 @@ class ChannelController extends Controller
     );
     }
 
-    public function archive($id, Request $request): JsonResponse
+    public function archive($id, Request $request, ConcurrencyService $concurrency): JsonResponse
     {
         $timestamp = $request->input('timestamp');
 
@@ -72,14 +101,34 @@ class ChannelController extends Controller
             $message = $user ? 'Subscription required' : 'Login required';
             return response()->json(['message' => $message], $status);
         }
-        
-        $archiveData = $this->syncing_service->getArchiveUrl($channel->external_id, (int)$timestamp);
+       $request->validate([
+        'device_id' => 'required|string|max:64',
+       ]);
+       $allowed = $concurrency->heartbeat(
+       $request->user()->id,
+       $request->input('device_id')
+    );
 
-        if (!$archiveData) {
+    if (!$allowed) {
+        return response()->json([
+            'message' => 'Device limit reached (Max 2). Stop watching on other devices.'
+        ], 409);
+    }
+    $expires = time() + 3600; 
+    $ip = $request->ip();
+    $secret = config('services.nginx.secure_link_secret'); 
+    
+    $stringToSign = "{$expires}{$ip} {$secret}";
+    $md5 = base64_encode(md5($stringToSign, true));
+    $md5 = str_replace(['+', '/', '='], ['-', '_', ''], $md5);
+    $archiveData = $this->syncing_service->getArchiveUrl($channel->external_id, (int)$timestamp);
+    if (!$archiveData) {
              return response()->json(['message' => 'Archive unavailable'], 404);
         }
-
-        return response()->json($archiveData);
+    $archiveData['next_heartbeat'] = 240; 
+    return response()->json($archiveData)
+        ->cookie('stream_sign', $md5, 5, null, null, true, true)
+        ->cookie('stream_expires', $expires, 5, null, null, true, true);
     }
     
     private function canAccessChannel(Channel $channel): bool
@@ -99,6 +148,7 @@ class ChannelController extends Controller
     if (empty($requiredPlanIds)) {
         return false;
     }
+    
     $userPlanIds = $user->getActivePlanIds();
     return !empty(array_intersect($requiredPlanIds, $userPlanIds));
 }
