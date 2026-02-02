@@ -41,8 +41,9 @@ class ChannelController extends Controller
         $message = $user ? 'Subscription required' : 'Login required';
         return response()->json(['message' => $message], $status);
     }
+    $externalId = $channel->external_id;
     if ($channel->is_free){
-        return response()->json($this->syncing_service->getStreamUrl($channel->external_id));
+        return response()->json($this->syncing_service->getStreamUrl($externalId,true));
     }
     $request->validate([
         'device_id' => 'required|string|max:64',
@@ -61,14 +62,15 @@ class ChannelController extends Controller
     $ip = $request->ip();
     $secret = config('services.nginx.secure_link_secret'); 
     
-    $stringToSign = "{$expires}{$ip} {$secret}";
+    $stringToSign = "{$expires}{$ip}{$externalId} {$secret}";
     $md5 = base64_encode(md5($stringToSign, true));
     $md5 = str_replace(['+', '/', '='], ['-', '_', ''], $md5);
-    $data = $this->syncing_service->getStreamUrl($channel->external_id);
+    $data = $this->syncing_service->getStreamUrl($externalId,false);
     $data['next_heartbeat'] = 240; 
     return response()->json($data)
         ->cookie('stream_sign', $md5, 5, null, null, true, true)
-        ->cookie('stream_expires', $expires, 5, null, null, true, true);
+        ->cookie('stream_expires', $expires, 5, null, null, true, true)
+        ->cookie('channel_id', $externalId, 5, null, null, true, true);
     }
     
     public function programs($id, Request $request): JsonResponse
@@ -101,8 +103,9 @@ class ChannelController extends Controller
             $message = $user ? 'Subscription required' : 'Login required';
             return response()->json(['message' => $message], $status);
         }
+        $externalId = $channel->external_id;
          if ($channel->is_free){
-        return response()->json($this->syncing_service->getArchiveUrl($channel->external_id, (int)$timestamp));
+        return response()->json($this->syncing_service->getArchiveUrl($externalId, (int)$timestamp,true));
     }
        $request->validate([
         'device_id' => 'required|string|max:64',
@@ -121,17 +124,19 @@ class ChannelController extends Controller
     $ip = $request->ip();
     $secret = config('services.nginx.secure_link_secret'); 
     
-    $stringToSign = "{$expires}{$ip} {$secret}";
+    $stringToSign = "{$expires}{$ip}{$externalId} {$secret}";
     $md5 = base64_encode(md5($stringToSign, true));
     $md5 = str_replace(['+', '/', '='], ['-', '_', ''], $md5);
-    $archiveData = $this->syncing_service->getArchiveUrl($channel->external_id, (int)$timestamp);
+    $archiveData = $this->syncing_service->getArchiveUrl($externalId, (int)$timestamp,false);
     if (!$archiveData) {
              return response()->json(['message' => 'Archive unavailable'], 404);
         }
     $archiveData['next_heartbeat'] = 240; 
     return response()->json($archiveData)
         ->cookie('stream_sign', $md5, 5, null, null, true, true)
-        ->cookie('stream_expires', $expires, 5, null, null, true, true);
+        ->cookie('stream_expires', $expires, 5, null, null, true, true)
+        ->cookie('channel_id', $externalId, 5, null, null, true, true);
+        
     }
     
     private function canAccessChannel(Channel $channel): bool
