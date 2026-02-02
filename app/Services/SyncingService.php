@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Channel;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -31,22 +32,12 @@ class SyncingService
         ])->post($this->baseUrl, [
             'Method' => 'GetChannelList'
         ]);
-
-        dump('Request URL: ' . $this->baseUrl);
-        dump('Request Body: ' . json_encode(['Method' => 'GetChannelList']));
-        dump('Response Status: ' . $response->status());
-        dump('Response Headers: ' . json_encode($response->headers()));
-        dump('Response Body: ' . $response->body());
-
         if ($response->successful()) {
             return $response->json();
         }
         
-        dump('API Error: ' . $response->status() . ' - ' . $response->body());
         return [];
     } catch (\Exception $e) {
-        dump('Exception: ' . $e->getMessage());
-        dump('Exception Trace: ' . $e->getTraceAsString());
         return [];
     }
 }
@@ -55,11 +46,11 @@ class SyncingService
      * params: externalId - Channel external ID
      * return: array|null - ['url' => string, 'expires_at' => int, 'server_time' => int] or null on failure
      */
-    public function getStreamUrl(string $externalId): ?array
+    public function getStreamUrl(string $externalId,bool $isFree): ?array
     {
         $key = "channel_stream_{$externalId}";
 
-        return Cache::remember($key, 3600, function () use ($externalId) {
+        return Cache::remember($key, 3600, function () use ($externalId,$isFree) {
             $response = Http::withoutVerifying()->withHeaders($this->headers)
                 ->post($this->baseUrl, [
                     'Method' => 'GetLiveStream',
@@ -74,7 +65,11 @@ class SyncingService
                 if ($rawUrl) {
                 $parsed = parse_url($rawUrl);
                 $pathAndQuery = $parsed['path'] . ($parsed['query'] ? '?' . $parsed['query'] : '');
-                $proxyUrl = config('app.url') . '/stream-proxy/' . ltrim($pathAndQuery, '/');
+                if ($isFree) {
+                 $proxyUrl = config('app.url') . '/stream-free/' . ltrim($pathAndQuery, '/');
+                 } else {
+                 $proxyUrl = config('app.url') . '/stream-premium/' . ltrim($pathAndQuery, '/');
+                 }
 
                 return [
                     'url' => $proxyUrl,
@@ -86,7 +81,7 @@ class SyncingService
 
             return null;
         });
-    }
+    }//i have to fix cache ttl to make it same as token end time
 
     /**
      * Get EPG (Cached for 1 hour)
@@ -127,9 +122,9 @@ class SyncingService
      * Get Archive URL (Cached for 6 hours)
      * PLACEHOLDER -  MOCKED waiting for akaki's API
      */
-    public function getArchiveUrl(string $externalId): ?string
+    public function getArchiveUrl(string $externalId,int $startEpoch,bool $isFree): ?array
     {
-     return Cache::remember("channel_archive_link{$externalId}", 21600, function () use ($externalId) {
+     $baseData = Cache::remember("channel_archive_base_{$externalId}", 3000, function () use ($externalId,$isFree) {
         $response = Http::withoutVerifying()->withHeaders([
          'Accept' => 'application/json',
             'Content-Type' => 'application/json',
@@ -147,8 +142,37 @@ class SyncingService
       if (!$response->successful()) {
         return null;
         }
-        $steamLink= $response->json();
-        return $steamLink['URL'] ?? null;
+         return $response->json();
      });
+     if (!$baseData || empty($baseData['URL'])) {
+            return null;
+        }
+        $dateTodayEpoch = Carbon::now()->timestamp;
+        $archiveLength = $baseData['ARCHIVE_LENGTH'] ?? 0;
+        if ($dateTodayEpoch-$startEpoch>$archiveLength*3600) {
+            return null;
+        }
+        $rawUrl = $baseData['URL']; 
+        
+        $parsed = parse_url($rawUrl);
+        $pathParts = explode('/', $parsed['path']);
+        array_pop($pathParts); 
+        $basePath = implode('/', $pathParts);
+
+        $timeshiftFile = "video-timeshift_abs-{$startEpoch}.m3u8";
+        
+        $newPath = $basePath . '/' . $timeshiftFile;
+
+        $query = $parsed['query'] ?? '';
+        $proxyPath = $newPath . ($query ? '?' . $query : '');
+        if($isFree){
+        $finalUrl = config('app.url') . '/archive-free' . $proxyPath;
+        }else{
+        $finalUrl = config('app.url') . '/archive-premium' . $proxyPath;
+        }
+
+        return [
+            'url' => $finalUrl
+        ];
     }
 }

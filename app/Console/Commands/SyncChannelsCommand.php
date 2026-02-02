@@ -46,14 +46,14 @@ class SyncChannelsCommand extends Command
                     'is_free' => $remote['FREE'] == "1",
                 ]
             );
-            $count++;
-        }
-        if ($channel->is_free === false) {
+         if ($channel->is_free === false) {
         $defaultPlan = SubscriptionPlan::where('name_en', 'Standard Package')->first();
         if ($defaultPlan) {
             $channel->plans()->syncWithoutDetaching([$defaultPlan->id]);
         }
-    }
+       }
+        $count++;
+     }
 
         $this->info("Synced {$count} channels successfully.");
     }

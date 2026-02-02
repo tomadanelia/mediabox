@@ -34,5 +34,8 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    'nginx' => [
+        'secure_link_secret' => env('NGINX_SECURE_LINK_SECRET'),
+    ],
 
 ];
