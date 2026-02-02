@@ -179,4 +179,22 @@ public function getStreamUrl($id, Request $request, ConcurrencyService $concurre
     return !empty(array_intersect($requiredPlanIds, $userPlanIds));
 }
 
+
+public function heartbeat(Request $request, ConcurrencyService $concurrency): JsonResponse
+{
+    $request->validate([
+        'device_id' => 'required|string|max:64',
+    ]);
+
+    $allowed = $concurrency->heartbeat(
+        $request->user()->id,
+        $request->input('device_id')
+    );
+
+    if (!$allowed) {
+        return response()->json(['message' => 'Session expired or limit reached'], 409);
+    }
+
+    return response()->json(['status' => 'ok']);
+}
 }
