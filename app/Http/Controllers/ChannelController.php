@@ -61,18 +61,17 @@ public function getStreamUrl($id, Request $request, ConcurrencyService $concurre
         return response()->json(['message' => 'Stream unavailable'], 404);
     }
 
-    $path = parse_url($streamData['url'], PHP_URL_PATH);
-    
+     
     $expires = time() + ($channel->is_free ? 86400 : 14400);
     
     $ip = $request->ip();
     $secret = config('services.nginx.secure_link_secret'); 
-    
+    $path = parse_url($streamData['url'], PHP_URL_PATH);    
     $stringToSign = "{$expires}{$path}{$ip} {$secret}";
     $md5 = base64_encode(md5($stringToSign, true));
     $md5 = str_replace(['+', '/', '='], ['-', '_', ''], $md5);
-    
-    $finalUrl = $streamData['url'] . "?md5={$md5}&expires={$expires}";
+    $separator = (parse_url($streamData['url'], PHP_URL_QUERY) == NULL) ? '?' : '&';
+    $finalUrl = $streamData['url'] . "{$separator}md5={$md5}&expires={$expires}";
 
     return response()->json([
         'url' => $finalUrl,
