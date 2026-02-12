@@ -66,8 +66,9 @@ public function getStreamUrl($id, Request $request, ConcurrencyService $concurre
     
     $ip = $request->ip();
     $secret = config('services.nginx.secure_link_secret'); 
-    $path = parse_url($streamData['url'], PHP_URL_PATH);    
-    $stringToSign = "{$expires}{$path}{$ip} {$secret}";
+    $fullPath = parse_url($streamData['url'], PHP_URL_PATH);
+    $directoryPath = dirname($fullPath) . '/'; 
+    $stringToSign = "{$expires}{$directoryPath}{$ip} {$secret}";
     $md5 = base64_encode(md5($stringToSign, true));
     $md5 = str_replace(['+', '/', '='], ['-', '_', ''], $md5);
     $separator = (parse_url($streamData['url'], PHP_URL_QUERY) == NULL) ? '?' : '&';
@@ -137,12 +138,14 @@ public function getStreamUrl($id, Request $request, ConcurrencyService $concurre
     }
 
     
-    $path = parse_url($archiveData['url'], PHP_URL_PATH);
     $expires = time() + ($channel->is_free ? 86400 : 14400);
     $ip = $request->ip();
     $secret = config('services.nginx.secure_link_secret'); 
+    $fullPath = parse_url($archiveData['url'], PHP_URL_PATH);
+    $directoryPath = dirname($fullPath) . '/'; 
+
+    $stringToSign = "{$expires}{$directoryPath}{$ip} {$secret}";
     
-    $stringToSign = "{$expires}{$path}{$ip} {$secret}";
     $md5 = base64_encode(md5($stringToSign, true));
     $md5 = str_replace(['+', '/', '='], ['-', '_', ''], $md5);
     
