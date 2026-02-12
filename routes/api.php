@@ -24,5 +24,9 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::get('/plans', [SubscriptionController::class, 'index']);
     Route::post('/plans/purchase', [SubscriptionController::class, 'purchase']);
+    Route::get('/channels/heartbeat', [ChannelController::class, 'heartbeat']);
+    Route::get('/user/preferences/favourite-channels', [UserPreferencesController::class, 'getFavouriteChannels']);
+    Route::post('/user/preferences/favourite-channels', [UserPreferencesController::class, 'addFavouriteChannel']);
+    Route::delete('/user/preferences/favourites/{channelId}', [UserPreferencesController::class, 'removeFavouriteChannel']);
 });
 

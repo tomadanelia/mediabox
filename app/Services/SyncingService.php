@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Channel;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -45,11 +46,11 @@ class SyncingService
      * params: externalId - Channel external ID
      * return: array|null - ['url' => string, 'expires_at' => int, 'server_time' => int] or null on failure
      */
-    public function getStreamUrl(string $externalId): ?array
+    public function getStreamUrl(string $externalId,bool $isFree): ?array
     {
         $key = "channel_stream_{$externalId}";
 
-        return Cache::remember($key, 3600, function () use ($externalId) {
+        return Cache::remember($key, 3600, function () use ($externalId,$isFree) {
             $response = Http::withoutVerifying()->withHeaders($this->headers)
                 ->post($this->baseUrl, [
                     'Method' => 'GetLiveStream',
@@ -64,7 +65,11 @@ class SyncingService
                 if ($rawUrl) {
                 $parsed = parse_url($rawUrl);
                 $pathAndQuery = $parsed['path'] . ($parsed['query'] ? '?' . $parsed['query'] : '');
-                $proxyUrl = config('app.url') . '/stream-proxy/' . ltrim($pathAndQuery, '/');
+                if ($isFree) {
+                 $proxyUrl = config('app.url') . '/stream-free/' . ltrim($pathAndQuery, '/');
+                 } else {
+                 $proxyUrl = config('app.url') . '/stream-premium/' . ltrim($pathAndQuery, '/');
+                 }
 
                 return [
                     'url' => $proxyUrl,
@@ -117,9 +122,9 @@ class SyncingService
      * Get Archive URL (Cached for 6 hours)
      * PLACEHOLDER -  MOCKED waiting for akaki's API
      */
-    public function getArchiveUrl(string $externalId,int $startEpoch): ?array
+    public function getArchiveUrl(string $externalId,int $startEpoch,bool $isFree): ?array
     {
-     $baseData = Cache::remember("channel_archive_base_{$externalId}", 3000, function () use ($externalId) {
+     $baseData = Cache::remember("channel_archive_base_{$externalId}", 3000, function () use ($externalId,$isFree) {
         $response = Http::withoutVerifying()->withHeaders([
          'Accept' => 'application/json',
             'Content-Type' => 'application/json',
@@ -142,7 +147,11 @@ class SyncingService
      if (!$baseData || empty($baseData['URL'])) {
             return null;
         }
-
+        $dateTodayEpoch = Carbon::now()->timestamp;
+        $archiveLength = $baseData['ARCHIVE_LENGTH'] ?? 0;
+        if ($dateTodayEpoch-$startEpoch>$archiveLength*3600) {
+            return null;
+        }
         $rawUrl = $baseData['URL']; 
         
         $parsed = parse_url($rawUrl);
@@ -156,8 +165,11 @@ class SyncingService
 
         $query = $parsed['query'] ?? '';
         $proxyPath = $newPath . ($query ? '?' . $query : '');
-        
-        $finalUrl = config('app.url') . '/archive-proxy' . $proxyPath;
+        if($isFree){
+        $finalUrl = config('app.url') . '/archive-free' . $proxyPath;
+        }else{
+        $finalUrl = config('app.url') . '/archive-premium' . $proxyPath;
+        }
 
         return [
             'url' => $finalUrl

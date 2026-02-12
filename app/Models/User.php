@@ -77,5 +77,14 @@ class User extends Authenticatable
     ])
     ->withTimestamps();
 }
+      public function favouriteChannels(){
+    return $this->belongsToMany(
+        Channel::class,
+        'user_favourites',
+        'user_id',
+        'channel_id',
+    )
+    ->withTimestamps();
+    }
 
 }
