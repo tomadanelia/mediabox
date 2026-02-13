@@ -70,7 +70,7 @@ public function getStreamUrl($id, Request $request, ConcurrencyService $concurre
     $md5 = base64_encode(md5($stringToSign, true));
     $md5 = str_replace(['+', '/', '='], ['-', '_', ''], $md5);
     $separator = (parse_url($streamData['url'], PHP_URL_QUERY) == NULL) ? '?' : '&';
-    $finalUrl = $streamData['url'] . "{$separator}md5={$md5}&expires={$expires}&id={$externalId}";
+    $finalUrl = $streamData['url'] . "{$separator}md5={$md5}&expires={$expires}&id={$externalId}&ip={$ip}";
 
     return response()->json([
         'url' => $finalUrl,
