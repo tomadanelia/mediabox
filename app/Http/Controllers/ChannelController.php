@@ -70,7 +70,7 @@ public function getStreamUrl($id, Request $request, ConcurrencyService $concurre
     $md5 = base64_encode(md5($stringToSign, true));
     $md5 = str_replace(['+', '/', '='], ['-', '_', ''], $md5);
     $separator = (parse_url($streamData['url'], PHP_URL_QUERY) == NULL) ? '?' : '&';
-    $finalUrl = $streamData['url'] . "{$separator}expires={$expires}&id={$externalId}&md5={$md5}";
+    $finalUrl = $streamData['url'] . "{$separator}md5={$md5}&expires={$expires}&id={$externalId}&f=.ge";
     return response()->json([
         'url' => $finalUrl,
         'heartbeat_interval' => $channel->is_free ? null : 120 
