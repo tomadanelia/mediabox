@@ -117,6 +117,34 @@ class SyncingService
         }
     });
 }
+    public function getAllEpg(string $externalId, int $start,int $end): array
+{
+    $key = "channel_all_epg_{$externalId}_{$start}_{$end}";
+
+    return Cache::remember($key, 3600, function () use ($externalId, $start, $end) {
+
+        $response = Http::withoutVerifying()->withHeaders($this->headers)
+        ->post('https://222.mediabox.ge/webapi', [
+            'Method' => 'LoadEpgData',
+            'Pars' => [
+                'CHANNEL_ID' => (int) $externalId,
+                'TIME_START' => $start,
+                'TIME_END'   => $end,
+            ],
+        ]);
+
+       if (!$response->successful()) {
+            return []; 
+        }
+
+        try {
+            $data = $response->json(); 
+            return is_array($data) ? $data : []; 
+        } catch (\Illuminate\Http\Client\RequestException $e) {
+            return []; 
+        }
+    });
+}
 
     /**
      * Get Archive URL (Cached for 6 hours)

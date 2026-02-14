@@ -91,6 +91,21 @@ public function getStreamUrl($id, Request $request, ConcurrencyService $concurre
         $this->syncing_service->getEpg($channel->external_id, $date)
     );
     }
+    public function allPrograms($id, Request $request): JsonResponse
+    {
+    $channel = Channel::where('external_id', $id)->firstOrFail();
+    $request->validate([
+        'start' => ['nullable', 'integer'],
+        'end'   => ['nullable', 'integer'],
+    ]);
+
+    $start = $request->input('start', now()->subDays(7)->startOfDay()->timestamp);
+    $end   = $request->input('end', now()->endOfDay()->timestamp);
+
+    return response()->json(
+        $this->syncing_service->getAllEpg($channel->external_id, $start, $end)
+    );
+    }
 
     public function archive($id, Request $request, ConcurrencyService $concurrency): JsonResponse
 {

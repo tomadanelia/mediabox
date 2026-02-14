@@ -8,6 +8,7 @@ Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/{id}/stream', [ChannelController::class, 'getStreamUrl']); 
     Route::get('/{id}/programs', [ChannelController::class, 'programs']);
+    Route::get('/{id}/programs/all',[ChannelController::class, 'allPrograms']);
     Route::get('/{id}/archive', [ChannelController::class, 'archive']);
 });
 Route::post('/auth/login', [AuthController::class, 'login'])  ->middleware('throttle:3,1');
