@@ -149,9 +149,10 @@ public function getStreamUrl($id, Request $request, ConcurrencyService $concurre
     $separator = (parse_url($archiveData['url'], PHP_URL_QUERY) == NULL) ? '?' : '&';
     
     $finalUrl = $archiveData['url'] . "{$separator}md5={$md5}&expires={$expires}&id={$externalId}&ip={$ip}";
-    
+    $archiveLength = $archiveData['length'] ?? 0;
     return response()->json([
         'url' => $finalUrl,
+        'hoursBack' => $archiveLength,
         'heartbeat_interval' => $channel->is_free ? null : 120 
     ]);
 }

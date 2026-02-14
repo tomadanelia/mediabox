@@ -153,7 +153,6 @@ class SyncingService
             return null;
         }
         $rawUrl = $baseData['URL']; 
-        
         $parsed = parse_url($rawUrl);
         $pathParts = explode('/', $parsed['path']);
         array_pop($pathParts); 
@@ -172,7 +171,8 @@ class SyncingService
         }
 
         return [
-            'url' => $finalUrl
+            'url' => $finalUrl,
+            'length'=> $baseData['ARCHIVE_LENGTH'] ?? 0,
         ];
     }
 }
