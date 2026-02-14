@@ -70,7 +70,7 @@ public function getStreamUrl($id, Request $request, ConcurrencyService $concurre
     $md5 = base64_encode(md5($stringToSign, true));
     $md5 = str_replace(['+', '/', '='], ['-', '_', ''], $md5);
     $separator = (parse_url($streamData['url'], PHP_URL_QUERY) == NULL) ? '?' : '&';
-    $finalUrl = $streamData['url'] . "{$separator}md5={$md5}&expires={$expires}&id={$externalId}&ip={$ip}";
+    $finalUrl = $streamData['url'] . "{$separator}md5={$md5}&expires={$expires}&id={$externalId}";
 
     return response()->json([
         'url' => $finalUrl,
@@ -139,10 +139,9 @@ public function getStreamUrl($id, Request $request, ConcurrencyService $concurre
     $expires = time() + ($channel->is_free ? 86400 : 14400);
     $ip = $request->ip();
     $secret = config('services.nginx.secure_link_secret'); 
-    $fullPath = parse_url($archiveData['url'], PHP_URL_PATH);
-    $directoryPath = dirname($fullPath) . '/'; 
 
-    $stringToSign = "{$expires}{$directoryPath}{$ip} {$secret}";
+
+    $stringToSign = "{$expires}{$externalId}{$ip} {$secret}";
     
     $md5 = base64_encode(md5($stringToSign, true));
     $md5 = str_replace(['+', '/', '='], ['-', '_', ''], $md5);
@@ -150,7 +149,7 @@ public function getStreamUrl($id, Request $request, ConcurrencyService $concurre
   
     $separator = (parse_url($archiveData['url'], PHP_URL_QUERY) == NULL) ? '?' : '&';
     
-    $finalUrl = $archiveData['url'] . "{$separator}md5={$md5}&expires={$expires}&ip={$ip}";
+    $finalUrl = $archiveData['url'] . "{$separator}md5={$md5}&expires={$expires}&id={$externalId}";
     
     return response()->json([
         'url' => $finalUrl,
