@@ -12,6 +12,7 @@ Route::prefix('channels')->group(function () {
     Route::get('/{id}/archive', [ChannelController::class, 'archive']);
 });
 Route::post('/auth/login', [AuthController::class, 'login'])  ->middleware('throttle:3,1');
+Route::post('/auth/login/verify', [AuthController::class, 'verifyLogin'])->middleware('throttle:5,1');
 Route::post('/auth/verify', [AuthController::class, 'verify']) ->middleware('throttle:3,1');
 Route::post('/auth/register', [AuthController::class, 'register']) ->middleware('throttle:5,1');
 Route::post('/auth/resend', [AuthController::class, 'resendCode'])->middleware('throttle:3,1');

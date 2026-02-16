@@ -18,6 +18,7 @@ class VerifyRequest extends FormRequest
         return [
             'user_id'=>['required','uuid'],
             "code"=>['required','string','size:6'],
+            'client'  => ['nullable', 'string', 'in:mobile,web'],
         ];
     }
 }

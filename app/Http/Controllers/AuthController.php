@@ -134,6 +134,36 @@ class AuthController extends Controller
         'code' => $otp
     ]);
     }
+    public function verifyLogin(VerifyRequest $request):JsonResponse
+    {
+        if (! $this->verificationService->validateOtp($request->user_id, $request->code)) {
+            return response()->json(['message' => 'Invalid or expired verification code.'], 400);
+        }
+
+        $user = User::findOrFail($request->user_id);
+        $this->verificationService->clearOtp($user->id);
+
+        if ($request->client === 'mobile') {
+            $user->tokens()->delete(); 
+            
+            $token = $user->createToken('mobile_app')->plainTextToken;
+
+            return response()->json([
+                'message' => 'Login successful',
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+                'user' => $user,
+            ]);
+        }
+
+        Auth::login($user);
+        $request->session()->regenerate();
+        
+        return response()->json([
+            'message' => 'Login successful',
+            'user' => $user,
+        ]);
+    }
     public function resendCode(Request $request): JsonResponse
     {
      $request->validate([
