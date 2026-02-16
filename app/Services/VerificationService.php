@@ -13,7 +13,7 @@ class VerificationService
      * @param int $length Length of the OTP code
      * @return string Generated OTP code
      */
-    public function generateAndSendcode(int $length = 6,$user): int
+    public function generateAndSendcode($user): int
     {
         $otp= rand(100000,999999);
         Cache::put('verification_code_'.$user->id,$otp,300);

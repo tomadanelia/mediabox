@@ -30,7 +30,7 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'full_name' => $request->full_name,
         ]);
-        $otp = $this->verificationService->generateAndSendcode(6,$user);
+        $otp = $this->verificationService->generateAndSendcode($user);
         
         return response()->json([
             'message' => 'User registered successfully. Please verify your account.',
@@ -112,6 +112,7 @@ class AuthController extends Controller
         }
         RateLimiter::clear($throttleKey);
 
+        $otp = $this->verificationService->generateAndSendcode($user);
 
         if($request->client === 'mobile') {
         $user->tokens()->delete();
@@ -121,6 +122,7 @@ class AuthController extends Controller
             'access_token' => $token,
             'token_type' => 'Bearer',
             'user' => $user,
+            'code' =>$otp
         ]);
         }
         Auth::login($user);
@@ -129,6 +131,7 @@ class AuthController extends Controller
     return response()->json([
         'message' => 'Login successful',
         'user' => $user,
+        'code' => $otp
     ]);
     }
     public function resendCode(Request $request): JsonResponse
