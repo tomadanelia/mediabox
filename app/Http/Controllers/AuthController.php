@@ -39,7 +39,7 @@ class AuthController extends Controller
         ], 201);
     }
 
-    public function verify(VerifyRequest $request): JsonResponse
+     public function verify(VerifyRequest $request): JsonResponse
     {
         if (! $this->verificationService->validateOtp($request->user_id, $request->code)) {
             return response()->json(['message' => 'Invalid or expired verification code.'], 400);
@@ -55,86 +55,68 @@ class AuthController extends Controller
         }
 
         $user->save();
-
         $this->verificationService->clearOtp($user->id);
 
-
-
         Account::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
-        if ($request->client === 'mobile') {
-        $user->tokens()->delete();
-        $token = $user->createToken('mobile_app')->plainTextToken;
+
+        if (! $request->hasSession()) {
+            $user->tokens()->delete();
+            $token = $user->createToken('mobile_app')->plainTextToken;
+
+            return response()->json([
+                'message' => 'Account verified successfully.',
+                'access_token' => $token,
+                'token_type' => 'Bearer',
+                'user' => $user,
+            ]);
+        }
+
+        Auth::login($user);
+        $request->session()->regenerate();
 
         return response()->json([
             'message' => 'Account verified successfully.',
-            'access_token' => $token,
-            'token_type' => 'Bearer',
             'user' => $user,
         ]);
-    }
-         Auth::login($user);
-         $request->session()->regenerate();
-
-    return response()->json([
-        'message' => 'Account verified successfully.',
-        'user' => $user,
-    ]);
     }
 
     public function login(LoginRequest $request): JsonResponse
     { 
-        // throttle login attempts per email/phone counter till 5 in cache and block for 15 minutes
         $throttleKey = 'login_attempt:' . Str::lower($request->login);
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
-        $seconds = RateLimiter::availableIn($throttleKey);
-        
-        throw ValidationException::withMessages([
-            'login' => ["Too many login attempts on same email or phone. Please try again in {$seconds} seconds."],
-        ])->status(429);
-    }
-        $loginType = filter_var($request->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
-    
+            $seconds = RateLimiter::availableIn($throttleKey);
+            throw ValidationException::withMessages([
+                'login' => ["Too many login attempts. Please try again in {$seconds} seconds."],
+            ])->status(429);
+        }
 
+        $loginType = filter_var($request->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
         $user = User::where($loginType, $request->login)->first();
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
-         RateLimiter::hit($throttleKey, 900);
-        $attemptsLeft = RateLimiter::remaining($throttleKey, 5);
-
+            RateLimiter::hit($throttleKey, 900);
+            $attemptsLeft = RateLimiter::remaining($throttleKey, 5);
             throw ValidationException::withMessages([
-                'login' => ["The provided credentials are incorrect.($attemptsLeft attempts remaining)"],
+                'login' => ["The provided credentials are incorrect. ($attemptsLeft attempts remaining)"],
             ]);
         }
 
         if (! $user->email_verified_at && ! $user->phone_verified_at) {
             return response()->json(['message' => 'Account not verified.'], 403);
         }
+        
         RateLimiter::clear($throttleKey);
 
         $otp = $this->verificationService->generateAndSendcode($user);
 
-        if($request->client === 'mobile') {
-        $user->tokens()->delete();
-        $token = $user->createToken('mobile_app')->plainTextToken;
         return response()->json([
-            'message' => 'Login successful',
-            'access_token' => $token,
-            'token_type' => 'Bearer',
-            'user' => $user,
-            'code' =>$otp
+            'message' => 'Credentials valid. Please verify OTP.',
+            'user_id' => $user->id,
+            'code' => $otp 
         ]);
-        }
-        Auth::login($user);
-        $request->session()->regenerate();
-        
-    return response()->json([
-        'message' => 'Login successful',
-        'user' => $user,
-        'code' => $otp
-    ]);
     }
-    public function verifyLogin(VerifyRequest $request):JsonResponse
+    public function verifyLogin(VerifyRequest $request): JsonResponse
     {
         if (! $this->verificationService->validateOtp($request->user_id, $request->code)) {
             return response()->json(['message' => 'Invalid or expired verification code.'], 400);
@@ -143,9 +125,7 @@ class AuthController extends Controller
         $user = User::findOrFail($request->user_id);
         $this->verificationService->clearOtp($user->id);
 
-        if ($request->client === 'mobile') {
-            $user->tokens()->delete(); 
-            
+        if (! $request->hasSession()) {
             $token = $user->createToken('mobile_app')->plainTextToken;
 
             return response()->json([
@@ -164,6 +144,7 @@ class AuthController extends Controller
             'user' => $user,
         ]);
     }
+
     public function resendCode(Request $request): JsonResponse
     {
      $request->validate([
@@ -177,9 +158,6 @@ class AuthController extends Controller
         return response()->json(['message' => 'If an account exists, a code has been sent.'], 200);
     }
 
-    if ($user->email_verified_at || $user->phone_verified_at) {
-        return response()->json(['message' => 'Account is already verified.'], 400);
-    }
 
     $cooldownKey = 'otp_cooldown_' . $user->id;
     if (Cache::has($cooldownKey)) {
@@ -204,8 +182,10 @@ class AuthController extends Controller
         $request->user()->currentAccessToken()->delete(); 
     } else {
         Auth::guard('web')->logout(); 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+       if ($request->hasSession()) {
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+       }
     }
     return response()->json(['message' => 'Logged out']);
     }
