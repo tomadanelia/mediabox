@@ -164,7 +164,7 @@ class AuthController extends Controller
         return response()->json(['message' => 'Please wait before requesting a new code.'], 429);
     }
 
-    $otp = $this->verificationService->generateAndSendcode(6, $user);
+    $otp = $this->verificationService->generateAndSendcode($user);
 
     Cache::put($cooldownKey, true, 60);
 
