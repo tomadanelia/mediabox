@@ -4,6 +4,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ChannelController; 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\UserPreferencesController;
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/{id}/stream', [ChannelController::class, 'getStreamUrl']); 
