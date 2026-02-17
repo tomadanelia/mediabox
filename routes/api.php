@@ -18,13 +18,13 @@ Route::post('/auth/register', [AuthController::class, 'register']) ->middleware(
 Route::post('/auth/resend', [AuthController::class, 'resendCode'])->middleware('throttle:3,1');
 Route::get('/interpay/balance', [InterPayController::class, 'handle']);   
 Route::post('/interpay/balance', [InterPayController::class, 'handle']);  
+Route::get('/plans', [SubscriptionController::class, 'index']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     
     Route::get('/user', function (Request $request) {
-        return $request->user();
+        return $request->user()->load('account');
     });
-    Route::get('/plans', [SubscriptionController::class, 'index']);
     Route::post('/plans/purchase', [SubscriptionController::class, 'purchase']);
     Route::get('/channels/heartbeat', [ChannelController::class, 'heartbeat']);
     Route::get('/user/preferences/favourite-channels', [UserPreferencesController::class, 'getFavouriteChannels']);
