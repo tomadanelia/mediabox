@@ -19,6 +19,23 @@ class SubscriptionController extends Controller
         $plans = SubscriptionPlan::where('is_active', true)->get();
         return response()->json($plans);
     }
+    public function myPlans(Request $request): JsonResponse
+{
+    $plans = $request->user()->subscriptionPlans()
+        ->wherePivot('is_active', true)
+        ->wherePivot('expires_at', '>', now())
+        ->get()
+        ->map(function ($plan) {
+            return [
+                'plan_id' => $plan->id,
+                'name_en' => $plan->name_en,
+                'name_ka' => $plan->name_ka,
+                'price'   => $plan->price,
+                'expires_at' => $plan->pivot->expires_at, 
+                'days_left'  => now()->diffInDays($plan->pivot->expires_at, false)
+            ];});
+    return response()->json($plans);
+}
     public function purchasePlan(User $user, string $planId): array
     {
         return DB::transaction(function () use ($user, $planId) {

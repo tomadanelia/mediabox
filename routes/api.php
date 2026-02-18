@@ -28,6 +28,7 @@ Route::middleware('auth:sanctum')->group(function () {
         return $request->user()->load('account');
     });
     Route::post('/plans/purchase', [SubscriptionController::class, 'purchase']);
+    Route::get('/plans/my', [SubscriptionController::class, 'myPlans']);
     Route::get('/channels/heartbeat', [ChannelController::class, 'heartbeat']);
     Route::get('/user/preferences/favourite-channels', [UserPreferencesController::class, 'getFavouriteChannels']);
     Route::post('/user/preferences/favourite-channels', [UserPreferencesController::class, 'addFavouriteChannel']);
