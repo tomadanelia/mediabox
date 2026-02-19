@@ -60,29 +60,3 @@ return new class extends Migration
     }
 };
 
-
-/*// 1. User opens app - GET /api/channels
-// Returns: List from my DB (fast, static data)
-[
-  { id: "22", name: "პირველი არხი", logo: "...", number: "1" }
-]
-
-// 2. User clicks channel - GET /api/channels/22/stream  
-// Returns: Cached live stream URL from old backend
-{
-  "url": "https://proxy.streamer.mediabox.ge/...",
-  "expires_at": 1767721931
-}
-
-// 3. User opens EPG - GET /api/channels/22/programs?date=2026-01-06
-// Returns: Cached program list
-[
-  { "time": "20:00", "title": "ახალი ამბები", "duration": 60 }
-]
-
-// 4. User clicks archive - GET /api/channels/22/archive?timestamp=1736179200
-// Returns: Fresh archive URL for that specific time
-{
-  "url": "https://proxy.streamer.mediabox.ge/archive/...",
-  "start": 1736179200
-}*/
