@@ -62,7 +62,7 @@ public function getStreamUrl($id, Request $request, ConcurrencyService $concurre
     }
 
      
-    $expires = time() + ($channel->is_free ? 86400 : 14400);
+    $expires = time() + 900;
     
     $ip = $request->ip();
     $secret = config('services.nginx.secure_link_secret'); 
@@ -150,7 +150,7 @@ public function getStreamUrl($id, Request $request, ConcurrencyService $concurre
     }
 
     
-    $expires = time() + ($channel->is_free ? 86400 : 14400);
+    $expires = time() + 900;
     $ip = $request->ip();
     $secret = config('services.nginx.secure_link_secret'); 
 
