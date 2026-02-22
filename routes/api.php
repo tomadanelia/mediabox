@@ -21,6 +21,7 @@ Route::post('/auth/resend', [AuthController::class, 'resendCode'])->middleware('
 Route::get('/interpay/balance', [InterPayController::class, 'handle']);   
 Route::post('/interpay/balance', [InterPayController::class, 'handle']);  
 Route::get('/plans', [SubscriptionController::class, 'index']);
+Route::get('/internal/stream-auth', [ChannelController::class, 'streamAuth'])->middleware('whitelist.ip');
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     

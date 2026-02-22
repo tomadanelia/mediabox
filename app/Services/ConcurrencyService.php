@@ -32,4 +32,13 @@ class ConcurrencyService
 
         return false;
     }
+    public function isSessionAlive(string $userId, string $deviceId): bool
+{
+    $key = "user_stream_sessions:{$userId}";
+    $now = time();
+
+    Redis::zremrangebyscore($key, 0, $now - self::SESSION_TTL);
+
+    return Redis::zscore($key, $deviceId) !== false;
+}
 }
