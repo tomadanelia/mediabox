@@ -10,7 +10,8 @@ use Illuminate\Http\JsonResponse;
 class ChannelController extends Controller
 {
     public function __construct(
-        protected SyncingService $syncing_service
+        protected SyncingService $syncing_service,
+        protected ConcurrencyService $concurrencyService
     ) {}
 
     public function getChannelFacade(): JsonResponse
@@ -195,13 +196,13 @@ public function getStreamUrl($id, Request $request, ConcurrencyService $concurre
 }
 
 
-public function heartbeat(Request $request, ConcurrencyService $concurrency): JsonResponse
+public function heartbeat(Request $request): JsonResponse
 {
     $request->validate([
         'device_id' => 'required|string|max:64',
     ]);
 
-    $allowed = $concurrency->heartbeat(
+    $allowed = $this->concurrencyService->heartbeat(
         $request->user()->id,
         $request->input('device_id')
     );
@@ -211,5 +212,19 @@ public function heartbeat(Request $request, ConcurrencyService $concurrency): Js
     }
 
     return response()->json(['status' => 'ok']);
+}
+
+public function streamAuth(Request $request): \Symfony\Component\HttpFoundation\Response
+{
+    $userId = $request->query('user_id');
+    $deviceId = $request->query('device_id');
+
+    if (!$userId || !$deviceId) {
+        return response()->noContent(400);
+    }
+
+    $allowed = $this->concurrencyService->isSessionAlive($userId, $deviceId);
+    
+    return response()->noContent($allowed ? 200 : 403);
 }
 }
