@@ -8,37 +8,54 @@ class ConcurrencyService
     private const MAX_DEVICES = 2;
     private const SESSION_TTL = 300; 
 
-    public function heartbeat(string $userId, string $deviceId): bool
-    {
-        $key = "user_stream_sessions:{$userId}";
-        $now = time();
-
-       
-        Redis::zremrangebyscore($key, 0, $now - self::SESSION_TTL);
-
-        if (Redis::zscore($key, $deviceId)) {
-            Redis::zadd($key, $now, $deviceId);
-            Redis::expire($key, self::SESSION_TTL + 60); 
-            return true;
-        }
-
-        $count = Redis::zcard($key);
-
-        if ($count < self::MAX_DEVICES) {
-            Redis::zadd($key, $now, $deviceId);
-            Redis::expire($key, self::SESSION_TTL + 60);
-            return true;
-        }
-
-        return false;
-    }
-    public function isSessionAlive(string $userId, string $deviceId): bool
+   public function heartbeat(string $userId, string $deviceId, string $ip): bool
 {
     $key = "user_stream_sessions:{$userId}";
+    $ipKey = "session_ip:{$userId}:{$deviceId}";
     $now = time();
 
     Redis::zremrangebyscore($key, 0, $now - self::SESSION_TTL);
 
-    return Redis::zscore($key, $deviceId) !== false;
+    $storedIp = Redis::get($ipKey);
+
+    if (Redis::zscore($key, $deviceId) !== false) {
+
+        if ($storedIp && $storedIp !== $ip) {
+            return false; 
+        }
+
+        Redis::zadd($key, $now, $deviceId);
+        Redis::setex($ipKey, self::SESSION_TTL, $ip);
+        Redis::expire($key, self::SESSION_TTL + 60);
+
+        return true;
+    }
+
+    $count = Redis::zcard($key);
+
+    if ($count >= self::MAX_DEVICES) {
+        return false;
+    }
+
+    Redis::zadd($key, $now, $deviceId);
+    Redis::setex($ipKey, self::SESSION_TTL, $ip);
+    Redis::expire($key, self::SESSION_TTL + 60);
+
+    return true;
+}
+  public function isSessionAlive(string $userId, string $deviceId, string $ip): bool
+{
+    $key = "user_stream_sessions:{$userId}";
+    $ipKey = "session_ip:{$userId}:{$deviceId}";
+    $now = time();
+
+    Redis::zremrangebyscore($key, 0, $now - self::SESSION_TTL);
+
+    if (Redis::zscore($key, $deviceId) === false) {
+        return false;
+    }
+
+    $storedIp = Redis::get($ipKey);
+    return $storedIp === $ip;
 }
 }

@@ -46,7 +46,8 @@ public function getStreamUrl($id, Request $request, ConcurrencyService $concurre
         
         $allowed = $concurrency->heartbeat(
             $request->user()->id,
-            $request->input('device_id')
+            $request->input('device_id'),
+            $request->ip()
         );
 
         if (!$allowed) {
@@ -129,7 +130,8 @@ public function getStreamUrl($id, Request $request, ConcurrencyService $concurre
         
         $allowed = $concurrency->heartbeat(
             $request->user()->id,
-            $request->input('device_id')
+            $request->input('device_id'),
+            $request->ip()
         );
 
         if (!$allowed) {
@@ -204,7 +206,8 @@ public function heartbeat(Request $request): JsonResponse
 
     $allowed = $this->concurrencyService->heartbeat(
         $request->user()->id,
-        $request->input('device_id')
+        $request->input('device_id'),
+        $request->ip()
     );
 
     if (!$allowed) {
@@ -218,12 +221,13 @@ public function streamAuth(Request $request): \Symfony\Component\HttpFoundation\
 {
     $userId = $request->query('user_id');
     $deviceId = $request->query('device_id');
+    $ip = $request->query('ip');
 
     if (!$userId || !$deviceId) {
         return response()->noContent(400);
     }
 
-    $allowed = $this->concurrencyService->isSessionAlive($userId, $deviceId);
+    $allowed = $this->concurrencyService->isSessionAlive($userId, $deviceId, $ip);
     
     return response()->noContent($allowed ? 200 : 403);
 }
