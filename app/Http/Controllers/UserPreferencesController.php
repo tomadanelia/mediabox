@@ -50,5 +50,20 @@ class UserPreferencesController
             'message'=>'Watch history updated successfully'
         ]);
     }
+    //i will change to returning external ids instead of internal ones to avoid confusion on client side if ther is one
+    public function getLastviewedChannels(Request $request):JsonResponse{
+    $lastChannelIds = $request->user()
+    ->watchHistories()
+    ->select('channel_id')
+    ->latest('watched_at')
+    ->distinct('channel_id') 
+    ->take(10)
+    ->pluck('channel_id');
+
+    return response()->json([
+    'lastViewedChannels' => $lastChannelIds
+   ]);
+
+    }
     
 }

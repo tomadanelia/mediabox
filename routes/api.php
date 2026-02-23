@@ -35,5 +35,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/user/preferences/favourite-channels', [UserPreferencesController::class, 'addFavouriteChannel']);
     Route::delete('/user/preferences/favourites/{channelId}', [UserPreferencesController::class, 'removeFavouriteChannel']);
     Route::post('/user/preferences/watch', [UserPreferencesController::class, 'updateWatchHistory']);
+    Route::get('/user/preferences/watch/last', [UserPreferencesController::class, 'getLastviewedChannels']);
 });
 
