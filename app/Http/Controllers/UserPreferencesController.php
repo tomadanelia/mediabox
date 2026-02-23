@@ -34,5 +34,21 @@ class UserPreferencesController
             'message'=>'Channel removed from favourites successfully'
         ]);
     }
+    public function updateWatchHistory(Request $request):JsonResponse
+    {
+        $request->validate([
+            'channelId' => 'required|exists:channels,external_id',
+        ]);
+        $channel = Channel::where('external_id', $request->channelId)->firstOrFail();
+        $request->user()->watchHistories()->create(
+           [
+           'channel_id' => $channel->id,
+           'watched_at' => now(),
+           ]
+        );
+        return response()->json([
+            'message'=>'Watch history updated successfully'
+        ]);
+    }
     
 }

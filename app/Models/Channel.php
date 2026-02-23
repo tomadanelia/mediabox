@@ -7,6 +7,7 @@ use App\Traits\HasUuid;
 use App\Models\ChannelCategory;
 use Illuminate\Support\Facades\Cache;
 use App\Models\SubscriptionPlan;
+use App\Models\UserWatchHistory;
 class Channel extends Model
 {
     use HasUuid;
@@ -46,4 +47,8 @@ class Channel extends Model
     {
         return $this->belongsToMany(SubscriptionPlan::class, 'channel_subscription_plan', 'channel_id', 'plan_id');
     }
+    public function viewers()
+{
+    return $this->hasMany(UserWatchHistory::class);
+}
 }

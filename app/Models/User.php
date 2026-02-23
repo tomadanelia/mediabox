@@ -11,7 +11,7 @@ use App\Models\Account;
 use App\Models\SubscriptionPlan;
 use Illuminate\Support\Facades\Cache;
 use App\Models\UserSubscription;
-
+use App\Models\Channel;
 
 class User extends Authenticatable
 {
@@ -86,5 +86,9 @@ class User extends Authenticatable
     )
     ->withTimestamps();
     }
+    public function watchHistories()
+{
+    return $this->hasMany(UserWatchHistory::class);
+}
 
 }
