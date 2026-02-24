@@ -6,6 +6,7 @@ use App\Http\Controllers\ChannelController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\UserPreferencesController;
+use App\Http\Controllers\AdminController;
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/{id}/stream', [ChannelController::class, 'getStreamUrl']); 
@@ -36,6 +37,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/user/preferences/favourites/{channelId}', [UserPreferencesController::class, 'removeFavouriteChannel']);
     Route::post('/user/preferences/watch', [UserPreferencesController::class, 'updateWatchHistory']);
     Route::get('/user/preferences/watch/last', [UserPreferencesController::class, 'getLastviewedChannels']);
-    Route::get('/admin/dashboard', [\App\Http\Controllers\AdminController::class, 'dashboard'])->middleware('auth:sanctum');
+    Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->middleware('auth:sanctum');
 });
-Route::post('/admin/categories', [\App\Http\Controllers\AdminController::class, 'addCategories']);
+Route::post('/admin/categories', [AdminController::class, 'addCategories']);
+Route::get('/admin/categories/{categoryId}', [AdminController::class, 'getAvailableChannelsForCategory']);
+Route::post('/admin/categories/{categoryId}', [AdminController::class, 'assignChannelsToCategory']);

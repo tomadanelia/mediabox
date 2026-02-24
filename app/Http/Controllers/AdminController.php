@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Channel;
 use App\Models\ChannelCategory;
+use App\Http\Requests\CategoryRequest; 
+use Illuminate\Http\Request; 
+use Illuminate\Http\JsonResponse; 
 class AdminController extends Controller
 {
     public function __construct() {}
@@ -25,5 +28,43 @@ class AdminController extends Controller
         'message' => 'Category added successfully',
         'data' => $category
     ]);    
+    }
+
+    public function getAvailableChannelsForCategory(string $categoryId): JsonResponse
+    {
+        $category = ChannelCategory::findOrFail($categoryId);
+
+        $channels = Channel::where(function ($query) use ($categoryId) {
+                $query->where('category_id', '!=', $categoryId)
+                      ->orWhereNull('category_id');
+            })
+            ->select(['id', 'external_id', 'name_ka', 'name_en', 'icon_url', 'category_id', 'number'])
+            ->with('category:id,name_en') 
+            ->orderBy('number', 'asc')
+            ->get();
+
+        return response()->json([
+            'target_category' => $category->name_en,
+            'available_channels' => $channels
+        ]);
+    }
+
+  
+    public function assignChannelsToCategory(Request $request, string $categoryId): JsonResponse
+    {
+        $request->validate([
+        'channel_ids' => ['required', 'array'],
+        'channel_ids.*' => ['required', 'uuid', 'exists:channels,id'],
+        ]);
+
+        $category = ChannelCategory::findOrFail($categoryId);
+
+        Channel::whereIn('id', $request->channel_ids)
+            ->update(['category_id' => $category->id]);
+
+        return response()->json([
+            'message' => 'Channels successfully added to ' . $category->name_en,
+            'count' => count($request->channel_ids)
+        ]);
     }
 }
