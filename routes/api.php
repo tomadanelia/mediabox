@@ -43,3 +43,5 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::post('/admin/categories', [AdminController::class, 'addCategories']);
 Route::get('/admin/categories/{categoryId}', [AdminController::class, 'getChannelsForCategory']);
 Route::post('/admin/categories/{categoryId}', [AdminController::class, 'assignChannelsToCategory']);
+Route::put('/admin/categories/{categoryId}', [\App\Http\Controllers\AdminController::class, 'editCategory']);
+Route::delete('/admin/categories/{categoryId}', [\App\Http\Controllers\AdminController::class, 'removeCategory']);

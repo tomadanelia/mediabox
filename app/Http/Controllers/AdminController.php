@@ -29,6 +29,26 @@ class AdminController extends Controller
         'data' => $category
     ]);    
     }
+    public function removeCategory(string $categoryId)
+    {
+       $category = ChannelCategory::findOrFail($categoryId);
+       $category->delete();
+
+    return response()->json([
+        'message' => 'Category removed successfully',
+        'data' => $category
+    ]);    
+    }
+    public function editCategory(CategoryRequest $request, string $categoryId)
+    {
+        $category = ChannelCategory::findOrFail($categoryId);
+        $category->update($request->validated());
+
+        return response()->json([
+            'message' => 'Category updated successfully',
+            'data' => $category
+        ]);
+    }
 
    public function getChannelsForCategory(string $categoryId): JsonResponse
 {
