@@ -28,6 +28,7 @@ class ChannelController extends Controller
                     'logo' => $channel->icon_url,
                     'number' => $channel->number,
                     "category"=>$channel->category?->name_en ?? null,
+                    "category_id"=>$channel->category_id,
                 ];
             });
         return response()->json($channels);
