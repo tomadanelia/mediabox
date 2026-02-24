@@ -5,6 +5,13 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\SubscriptionPlan;
 use App\Services\SubscriptionService;
+use App\Models\User;
+use App\Models\UserSubscription;
+use App\Models\PaymentTransaction;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -103,4 +110,16 @@ class SubscriptionController extends Controller
             ];
         });
     }
+       public function getChannelsForPlan(string $planId)
+{
+    $channels = Cache::remember("plan_channels_{$planId}", 120, function () use ($planId) {
+        $plan = SubscriptionPlan::findOrFail($planId);
+        return $plan->channels()->get();
+    });
+
+    return response()->json([
+        'message' => 'Channels retrieved successfully',
+        'channels' => $channels
+    ], 200);
+}
 }
