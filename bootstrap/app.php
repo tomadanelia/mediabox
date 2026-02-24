@@ -17,6 +17,9 @@ return Application::configure(basePath: dirname(__DIR__))
     $middleware->alias([
         'whitelist.ip' => IpWhiteList::class,
     ]);
+    $middleware->validateCsrfTokens(except: [
+    'api/admin/categories/*', //absolutely have ti change this in production, but for now we need to be able to test the admin category management without CSRF tokens
+    ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
