@@ -9,6 +9,7 @@ use App\Http\Controllers\UserPreferencesController;
 use App\Http\Controllers\AdminController;
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
+    Route::get('/categories', [ChannelController::class, 'getCategories']);
     Route::get('/{id}/stream', [ChannelController::class, 'getStreamUrl']); 
     Route::get('/{id}/programs', [ChannelController::class, 'programs']);
     Route::get('/{id}/programs/all',[ChannelController::class, 'allPrograms']);

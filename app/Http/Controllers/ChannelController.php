@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Channel;
+use App\Models\ChannelCategory; 
 use App\Services\ConcurrencyService;
 use App\Services\SyncingService;
 use Illuminate\Http\Request;
@@ -34,6 +35,12 @@ class ChannelController extends Controller
         return response()->json($channels);
     }
     
+public function getCategories(): JsonResponse
+{
+    $categories = ChannelCategory::all(); 
+    
+    return response()->json($categories);
+}
 
 public function getStreamUrl($id, Request $request, ConcurrencyService $concurrency): JsonResponse
 {
