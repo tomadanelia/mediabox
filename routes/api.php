@@ -41,5 +41,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/dashboard', [AdminController::class, 'dashboard'])->middleware('auth:sanctum');
 });
 Route::post('/admin/categories', [AdminController::class, 'addCategories']);
-Route::get('/admin/categories/{categoryId}', [AdminController::class, 'getAvailableChannelsForCategory']);
+Route::get('/admin/categories/{categoryId}', [AdminController::class, 'getChannelsForCategory']);
 Route::post('/admin/categories/{categoryId}', [AdminController::class, 'assignChannelsToCategory']);

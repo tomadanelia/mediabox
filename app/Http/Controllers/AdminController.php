@@ -30,24 +30,29 @@ class AdminController extends Controller
     ]);    
     }
 
-    public function getAvailableChannelsForCategory(string $categoryId): JsonResponse
-    {
-        $category = ChannelCategory::findOrFail($categoryId);
+   public function getChannelsForCategory(string $categoryId): JsonResponse
+{
+    $category = ChannelCategory::findOrFail($categoryId);
 
-        $channels = Channel::where(function ($query) use ($categoryId) {
-                $query->where('category_id', '!=', $categoryId)
-                      ->orWhereNull('category_id');
-            })
-            ->select(['id', 'external_id', 'name_ka', 'name_en', 'icon_url', 'category_id', 'number'])
-            ->with('category:id,name_en') 
-            ->orderBy('number', 'asc')
-            ->get();
+    $channels = Channel::where('category_id', $categoryId)
+        ->select([
+            'id',
+            'external_id',
+            'name_ka',
+            'name_en',
+            'icon_url',
+            'category_id',
+            'number'
+        ])
+        ->with('category:id,name_en')
+        ->orderBy('number', 'asc')
+        ->get();
 
-        return response()->json([
-            'target_category' => $category->name_en,
-            'available_channels' => $channels
-        ]);
-    }
+    return response()->json([
+        'target_category' => $category->name_en,
+        'channels' => $channels
+    ]);
+}
 
   
     public function assignChannelsToCategory(Request $request, string $categoryId): JsonResponse
