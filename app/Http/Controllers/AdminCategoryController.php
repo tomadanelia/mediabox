@@ -6,6 +6,7 @@ use App\Models\Channel;
 use App\Models\ChannelCategory;
 use App\Http\Requests\CategoryRequest; 
 use Illuminate\Http\Request; 
+use App\Models\User;
 use Illuminate\Http\JsonResponse; 
 class AdminCategoryController extends Controller
 {
