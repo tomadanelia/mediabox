@@ -73,6 +73,7 @@ Route::prefix('admin')->group(function () {
         Route::delete('/{planId}', [AdminPlansController::class, 'deletePlan']);
         Route::post('/{planId}/channels', [AdminPlansController::class, 'addChannelsToPlan']);
         Route::delete('/{planId}/channels', [AdminPlansController::class, 'removeChannelsFromPlan']);
+        Route::get('/all', [AdminPlansController::class, 'allPlans']);
     });
 
 });

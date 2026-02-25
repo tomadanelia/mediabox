@@ -5,8 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\SubscriptionPlan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Http\JsonResponse;
 class AdminPlansController extends Controller
 {
+    public function allPlans(): JsonResponse
+    {
+        $plans = SubscriptionPlan::all();
+        return response()->json($plans);
+    }
     public function addPlan(Request $request)
     {
         $validated = $request->validate([
