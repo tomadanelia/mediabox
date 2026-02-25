@@ -8,7 +8,7 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\UserPreferencesController;
 use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminPlansController;
-use Laravel\Mcp\Enums\Role;
+use App\Http\Controllers\SpaAuthController;
 
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
@@ -33,6 +33,14 @@ Route::prefix('auth')->group(function () {
 
     Route::post('/resend', [AuthController::class, 'resendCode'])
         ->middleware('throttle:3,1');
+    Route::prefix('web')->group(function () {
+        Route::post('/verify', [SpaAuthController::class, 'verify'])
+            ->middleware('throttle:3,1');
+        Route::post('/login/verify', [SpaAuthController::class, 'verifyLogin'])
+            ->middleware('throttle:5,1');
+        Route::post('/logout', [SpaAuthController::class, 'logout'])
+            ->middleware('auth:sanctum');
+     });
 });
 Route::get('/interpay/balance', [InterPayController::class, 'handle']);   
 Route::post('/interpay/balance', [InterPayController::class, 'handle']);  
@@ -41,7 +49,8 @@ Route::get('/plans/{planId}/channels', [SubscriptionController::class, 'getChann
 Route::get('/internal/stream-auth', [ChannelController::class, 'streamAuth'])->middleware('whitelist.ip');
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
-    
+    Route::post('/auth/web/logout', [SpaAuthController::class, 'logout']);
+
     Route::get('/user', function (Request $request) {
         return $request->user()->load('account');
     });

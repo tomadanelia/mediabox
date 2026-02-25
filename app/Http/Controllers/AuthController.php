@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\VerifyRequest;
@@ -45,7 +46,7 @@ class AuthController extends Controller
             return response()->json(['message' => 'Invalid or expired verification code.'], 400);
         }
 
-        $user = User::find($request->user_id);
+        $user = User::findOrFail($request->user_id);
 
         if ($user->phone) {
             $user->phone_verified_at = now();
@@ -59,27 +60,18 @@ class AuthController extends Controller
 
         Account::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
 
-        if (! $request->hasSession()) {
-            $user->tokens()->delete();
-            $token = $user->createToken('mobile_app')->plainTextToken;
-
-            return response()->json([
-                'message' => 'Account verified successfully.',
-                'access_token' => $token,
-                'token_type' => 'Bearer',
-                'user' => $user,
-            ]);
-        }
-
-        Auth::login($user);
-        $request->session()->regenerate();
+        $user->tokens()->delete();
+        $token = $user->createToken('mobile_app')->plainTextToken;
 
         return response()->json([
             'message' => 'Account verified successfully.',
+            'access_token' => $token,
+            'token_type' => 'Bearer',
             'user' => $user,
         ]);
     }
 
+    
     public function login(LoginRequest $request): JsonResponse
     { 
         $throttleKey = 'login_attempt:' . Str::lower($request->login);
@@ -96,9 +88,8 @@ class AuthController extends Controller
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
             RateLimiter::hit($throttleKey, 900);
-            $attemptsLeft = RateLimiter::remaining($throttleKey, 5);
             throw ValidationException::withMessages([
-                'login' => ["The provided credentials are incorrect. ($attemptsLeft attempts remaining)"],
+                'login' => ["The provided credentials are incorrect."],
             ]);
         }
 
@@ -107,7 +98,6 @@ class AuthController extends Controller
         }
         
         RateLimiter::clear($throttleKey);
-
         $otp = $this->verificationService->generateAndSendcode($user);
 
         return response()->json([
@@ -125,22 +115,12 @@ class AuthController extends Controller
         $user = User::findOrFail($request->user_id);
         $this->verificationService->clearOtp($user->id);
 
-        if (! $request->hasSession()) {
-            $token = $user->createToken('mobile_app')->plainTextToken;
+         $token = $user->createToken('mobile_app')->plainTextToken;
 
-            return response()->json([
-                'message' => 'Login successful',
-                'access_token' => $token,
-                'token_type' => 'Bearer',
-                'user' => $user,
-            ]);
-        }
-
-        Auth::login($user);
-        $request->session()->regenerate();
-        
         return response()->json([
             'message' => 'Login successful',
+            'access_token' => $token,
+            'token_type' => 'Bearer',
             'user' => $user,
         ]);
     }
@@ -178,15 +158,9 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        if ($request->user()->currentAccessToken()) {
-        $request->user()->currentAccessToken()->delete(); 
-    } else {
-        Auth::guard('web')->logout(); 
-       if ($request->hasSession()) {
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-       }
-    }
-    return response()->json(['message' => 'Logged out']);
+        if ($request->user() && $request->user()->currentAccessToken()) {
+            $request->user()->currentAccessToken()->delete(); 
+        }
+        return response()->json(['message' => 'Logged out']);
     }
 }
