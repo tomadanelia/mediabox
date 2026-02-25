@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\SubscriptionPlan;
+use Illuminate\Support\Facades\Cache;
 class AdminPlansController extends Controller
 {
     public function addPlan(Request $request)
