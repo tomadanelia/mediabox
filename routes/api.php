@@ -8,6 +8,8 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\UserPreferencesController;
 use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminPlansController;
+use Laravel\Mcp\Enums\Role;
+
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/categories', [ChannelController::class, 'getCategories']);
@@ -67,6 +69,8 @@ Route::prefix('admin')->group(function () {
         Route::post('/', [AdminPlansController::class, 'addPlan']);
         Route::put('/{planId}', [AdminPlansController::class, 'editPlan']);
         Route::post('/{planId}/disable', [AdminPlansController::class, 'disablePlan']);
+        Route::post('/{planId}/enable', [AdminPlansController::class, 'enablePlan']);
+        Route::delete('/{planId}', [AdminPlansController::class, 'deletePlan']);
         Route::post('/{planId}/channels', [AdminPlansController::class, 'addChannelsToPlan']);
         Route::delete('/{planId}/channels', [AdminPlansController::class, 'removeChannelsFromPlan']);
     });

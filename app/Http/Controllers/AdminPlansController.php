@@ -57,6 +57,34 @@ class AdminPlansController extends Controller
             'data' => $plan
         ],200);
     }
+    public function enablePlan(string $planId)
+    {
+        $plan = SubscriptionPlan::findOrFail($planId);
+        $plan->update(['is_active' => true]);
+
+        return response()->json([
+            'message' => 'Subscription plan enabled successfully',
+            'data' => $plan
+        ],200);
+    }
+    public function deletePlan(string $planId)
+{
+    $plan = SubscriptionPlan::findOrFail($planId);
+
+    if ($plan->channels()->count() > 0) {
+        return response()->json([
+            'message' => 'Cannot delete plan: it still has channels assigned.'
+        ], 400); 
+    }
+
+    $plan->delete();
+
+    Cache::forget("plan_channels_{$planId}");
+
+    return response()->json([
+        'message' => 'Subscription plan deleted successfully'
+    ], 200);
+}
     public function addChannelsToPlan(Request $request, string $planId)
     {
         $plan = SubscriptionPlan::findOrFail($planId);
