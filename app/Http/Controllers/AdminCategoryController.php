@@ -92,4 +92,11 @@ class AdminCategoryController extends Controller
             'count' => count($request->channel_ids)
         ]);
     }
+    public function users()
+    {
+        $users = User::with('account')
+    ->select('id', 'username', 'email', 'full_name', 'avatar_url', 'role')
+    ->paginate(20);
+        return response()->json($users);
+    }
 }

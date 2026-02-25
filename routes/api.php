@@ -56,7 +56,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/dashboard', [AdminCategoryController::class, 'dashboard'])->middleware('auth:sanctum');
 });
 Route::prefix('admin')->group(function () {
-
+    Route::get('/users', [AdminCategoryController::class, 'users']);
     Route::prefix('categories')->group(function () {
         Route::post('/', [AdminCategoryController::class, 'addCategories']);
         Route::get('/{categoryId}', [AdminCategoryController::class, 'getChannelsForCategory']);
