@@ -7,7 +7,7 @@ use App\Models\ChannelCategory;
 use App\Http\Requests\CategoryRequest; 
 use Illuminate\Http\Request; 
 use Illuminate\Http\JsonResponse; 
-class AdminController extends Controller
+class AdminCategoryController extends Controller
 {
     public function __construct() {}
 
