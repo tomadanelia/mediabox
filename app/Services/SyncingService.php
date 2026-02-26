@@ -2,10 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\Channel;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class SyncingService
@@ -16,9 +14,66 @@ class SyncingService
         'Accept' => 'application/json',
     ];
 
-    /**
-     * Getting raw channelList for Synchronization
-     */
+   public function getStreamUrl(string $externalId, string $clientIp): ?array
+{
+    $key = "channel_stream_{$externalId}_{$clientIp}";
+
+    return Cache::remember($key, 300, function () use ($externalId, $clientIp) {
+        $response = Http::withoutVerifying()->post($this->baseUrl, [
+            'Method' => 'GetLiveStream',
+            'Pars' => [
+                'CHANNEL_ID' => (int)$externalId,
+                'clientip'   => $clientIp 
+            ],
+            'urltype' => 'flussonic'
+        ]);
+
+        if ($response->successful()) {
+            $data = $response->json();
+            if (!empty($data['URL'])) {
+                return [
+                    'url' => $data['URL'], 
+                    'expires_at' => $data['END'] ?? null,
+                ];
+            }
+        }
+        return null;
+    });
+}
+
+public function getArchiveUrl(string $externalId, int $startEpoch, string $clientIp): ?array
+{
+    $response = Http::withoutVerifying()->post($this->baseUrl, [
+        'Method' => 'GetArchiveStream',
+        'Pars' => [
+            'CHANNEL_ID' => (int) $externalId,
+            'clientip'   => $clientIp 
+        ],
+        'urltype' => 'flussonic',
+    ]);
+
+    if ($response->successful()) {
+        $baseData = $response->json();
+        if (!empty($baseData['URL'])) {
+            $rawUrl = $baseData['URL']; 
+            $parsed = parse_url($rawUrl);
+            $pathParts = explode('/', $parsed['path']);
+            array_pop($pathParts); 
+            $basePath = implode('/', $pathParts);
+
+            $timeshiftFile = "video-timeshift_abs-{$startEpoch}.m3u8";
+            $query = $parsed['query'] ?? '';
+            
+            $finalUrl = "{$parsed['scheme']}://{$parsed['host']}{$basePath}/{$timeshiftFile}?{$query}";
+
+            return [
+                'url' => $finalUrl,
+                'length'=> $baseData['ARCHIVE_LENGTH'] ?? 0,
+            ];
+        }
+    }
+    return null;
+}
    public function fetchChannelList(): array
 {
     try {
@@ -41,47 +96,7 @@ class SyncingService
         return [];
     }
 }
-    /**
-     * Gets livestream url from cache or fetches it from MediaBox API adds  returns and caches it for 1 hour
-     * params: externalId - Channel external ID
-     * return: array|null - ['url' => string, 'expires_at' => int, 'server_time' => int] or null on failure
-     */
-    public function getStreamUrl(string $externalId,bool $isFree): ?array
-    {
-        $key = "channel_stream_{$externalId}";
-
-        return Cache::remember($key, 3600, function () use ($externalId,$isFree) {
-            $response = Http::withoutVerifying()->withHeaders($this->headers)
-                ->post($this->baseUrl, [
-                    'Method' => 'GetLiveStream',
-                    'Pars' => ['CHANNEL_ID' => (int)$externalId],
-                    'urltype' => 'flussonic'
-                ]);
-
-            if ($response->successful()) {
-                $data = $response->json();
-                $rawUrl = $data['URL'] ?? null;
-
-                if ($rawUrl) {
-                $parsed = parse_url($rawUrl);
-                $pathAndQuery = $parsed['path'] . ($parsed['query'] ? '?' . $parsed['query'] : '');
-                if ($isFree) {
-                 $proxyUrl = config('app.url') . '/stream-free/' . ltrim($pathAndQuery, '/');
-                 } else {
-                 $proxyUrl = config('app.url') . '/stream-premium/' . ltrim($pathAndQuery, '/');
-                 }
-
-                return [
-                    'url' => $proxyUrl,
-                    'expires_at' => $data['END'] ?? null,
-                    'server_time' => now()->timestamp
-                ];
-                }
-            }
-
-            return null;
-        });
-    }//i have to fix cache ttl to make it same as token end time
+   
 
     /**
      * Get EPG (Cached for 1 hour)
@@ -146,61 +161,4 @@ class SyncingService
     });
 }
 
-    /**
-     * Get Archive URL (Cached for 6 hours)
-     * PLACEHOLDER -  MOCKED waiting for akaki's API
-     */
-    public function getArchiveUrl(string $externalId,int $startEpoch,bool $isFree): ?array
-    {
-     $baseData = Cache::remember("channel_archive_base_{$externalId}", 3000, function () use ($externalId,$isFree) {
-        $response = Http::withoutVerifying()->withHeaders([
-         'Accept' => 'application/json',
-            'Content-Type' => 'application/json',
-            'Cache-Control' => 'no-cache',
-            'Origin' => 'https://222.mediabox.ge',
-            'Referer' => 'https://222.mediabox.ge/',
-            'User-Agent' => 'PostmanRuntime/7.51.0', 
-    ])->post('https://222.mediabox.ge/webapi', [
-        'Method' => 'GetArchiveStream',
-        'Pars' => [
-            'CHANNEL_ID' => (int) $externalId,
-        ],
-        'urltype' => 'flussonic',
-    ]);
-      if (!$response->successful()) {
-        return null;
-        }
-         return $response->json();
-     });
-     if (!$baseData || empty($baseData['URL'])) {
-            return null;
-        }
-        $dateTodayEpoch = Carbon::now()->timestamp;
-        $archiveLength = $baseData['ARCHIVE_LENGTH'] ?? 0;
-        if ($dateTodayEpoch-$startEpoch>$archiveLength*3600) {
-            return null;
-        }
-        $rawUrl = $baseData['URL']; 
-        $parsed = parse_url($rawUrl);
-        $pathParts = explode('/', $parsed['path']);
-        array_pop($pathParts); 
-        $basePath = implode('/', $pathParts);
-
-        $timeshiftFile = "video-timeshift_abs-{$startEpoch}.m3u8";
-        
-        $newPath = $basePath . '/' . $timeshiftFile;
-
-        $query = $parsed['query'] ?? '';
-        $proxyPath = $newPath . ($query ? '?' . $query : '');
-        if($isFree){
-        $finalUrl = config('app.url') . '/archive-free' . $proxyPath;
-        }else{
-        $finalUrl = config('app.url') . '/archive-premium' . $proxyPath;
-        }
-
-        return [
-            'url' => $finalUrl,
-            'length'=> $baseData['ARCHIVE_LENGTH'] ?? 0,
-        ];
-    }
 }

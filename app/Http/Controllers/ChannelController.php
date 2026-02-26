@@ -42,49 +42,25 @@ public function getCategories(): JsonResponse
     return response()->json($categories);
 }
 
-public function getStreamUrl($id, Request $request, ConcurrencyService $concurrency): JsonResponse
+public function getStreamUrl($id, Request $request): JsonResponse
 {
     $channel = Channel::where('external_id', $id)->firstOrFail();
     
-    if (!$channel->is_free) {
-        if (!$this->canAccessChannel($channel)) {
+    if (!$channel->is_free && !$this->canAccessChannel($channel)) {
              return response()->json(['message' => 'Subscription required'], 403);
-        }
-        $request->validate(['device_id' => 'required|string']);
-        
-        $allowed = $concurrency->heartbeat(
-            $request->user()->id,
-            $request->input('device_id'),
-            $request->ip()
-        );
-
-        if (!$allowed) {
-            return response()->json(['message' => 'Device limit reached'], 409);
-        }
     }
 
     
     $externalId = $channel->external_id;
     $streamData = $this->syncing_service->getStreamUrl($externalId, $channel->is_free);
     
+     $streamData = $this->syncing_service->getStreamUrl($channel->external_id, $request->ip());
+    
     if (!$streamData) {
         return response()->json(['message' => 'Stream unavailable'], 404);
     }
 
-     
-    $expires = time() + 900;
-    
-    $ip = $request->ip();
-    $secret = config('services.nginx.secure_link_secret'); 
-    $stringToSign = "{$expires}{$externalId}{$ip} {$secret}";
-    $md5 = base64_encode(md5($stringToSign, true));
-    $md5 = str_replace(['+', '/', '='], ['-', '_', ''], $md5);
-    $separator = (parse_url($streamData['url'], PHP_URL_QUERY) == NULL) ? '?' : '&';
-    $finalUrl = $streamData['url'] . "{$separator}md5={$md5}&expires={$expires}&id={$externalId}&ip={$ip}";
-    return response()->json([
-        'url' => $finalUrl,
-        'heartbeat_interval' => $channel->is_free ? null : 120 
-    ]);
+    return response()->json($streamData);
 }
 
     public function programs($id, Request $request): JsonResponse
@@ -101,6 +77,9 @@ public function getStreamUrl($id, Request $request, ConcurrencyService $concurre
         $this->syncing_service->getEpg($channel->external_id, $date)
     );
     }
+
+
+
     public function allPrograms($id, Request $request): JsonResponse
     {
     $channel = Channel::where('external_id', $id)->firstOrFail();
@@ -117,7 +96,7 @@ public function getStreamUrl($id, Request $request, ConcurrencyService $concurre
     );
     }
 
-    public function archive($id, Request $request, ConcurrencyService $concurrency): JsonResponse
+    public function archive($id, Request $request): JsonResponse
 {
     $timestamp = $request->input('timestamp');
     if (!$timestamp) {
@@ -126,61 +105,24 @@ public function getStreamUrl($id, Request $request, ConcurrencyService $concurre
     
     $channel = Channel::where('external_id', $id)->firstOrFail();
 
-    if (!$channel->is_free) {
-        if (!$this->canAccessChannel($channel)) {
+    if (!$channel->is_free && !$this->canAccessChannel($channel)) {
             $user = Auth::guard('sanctum')->user();
             $status = $user ? 403 : 401;
             $message = $user ? 'Subscription required' : 'Login required';
             return response()->json(['message' => $message], $status);
-        }
-
-        $request->validate(['device_id' => 'required|string|max:64']);
-        
-        $allowed = $concurrency->heartbeat(
-            $request->user()->id,
-            $request->input('device_id'),
-            $request->ip()
-        );
-
-        if (!$allowed) {
-            return response()->json([
-                'message' => 'Device limit reached. Stop watching on other devices.'
-            ], 409);
-        }
     }
 
-    $externalId = $channel->external_id;
-    $archiveData = $this->syncing_service->getArchiveUrl(
-        $externalId, 
+   $archiveData = $this->syncing_service->getArchiveUrl(
+        $channel->external_id, 
         (int)$timestamp, 
-        $channel->is_free
+        $request->ip()
     );
 
     if (!$archiveData) {
         return response()->json(['message' => 'Archive unavailable'], 404);
     }
 
-    
-    $expires = time() + 900;
-    $ip = $request->ip();
-    $secret = config('services.nginx.secure_link_secret'); 
-
-
-    $stringToSign = "{$expires}{$externalId}{$ip} {$secret}";
-    
-    $md5 = base64_encode(md5($stringToSign, true));
-    $md5 = str_replace(['+', '/', '='], ['-', '_', ''], $md5);
-    
-  
-    $separator = (parse_url($archiveData['url'], PHP_URL_QUERY) == NULL) ? '?' : '&';
-    
-    $finalUrl = $archiveData['url'] . "{$separator}md5={$md5}&expires={$expires}&id={$externalId}&ip={$ip}";
-    $archiveLength = $archiveData['length'] ?? 0;
-    return response()->json([
-        'url' => $finalUrl,
-        'hoursBack' => $archiveLength,
-        'heartbeat_interval' => $channel->is_free ? null : 120 
-    ]);
+    return response()->json($archiveData);
 }
     
     private function canAccessChannel(Channel $channel): bool
