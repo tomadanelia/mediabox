@@ -31,11 +31,7 @@ class SyncingService
         'urltype' => 'flussonic',
         'clientip'   => $clientIp,
     ]);
-        \Illuminate\Support\Facades\Log::info('Legacy API Response', [
-        'id' => $externalId, 
-        'ip' => $clientIp, 
-        'body' => $response->json()
-    ]);
+
         if ($response->successful()) {
             $data = $response->json();
             if (!empty($data['URL'])) {
@@ -62,6 +58,8 @@ public function getArchiveUrl(string $externalId, int $startEpoch, string $clien
             'clientip'   => $clientIp
         ],
         'urltype' => 'flussonic',
+        'clientip'   => $clientIp,
+
     ]);
 
     if ($response->successful()) {
