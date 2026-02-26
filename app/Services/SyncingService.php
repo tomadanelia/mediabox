@@ -19,14 +19,18 @@ class SyncingService
     $key = "channel_stream_{$externalId}_{$clientIp}";
 
     return Cache::remember($key, 300, function () use ($externalId, $clientIp) {
-        $response = Http::withoutVerifying()->post($this->baseUrl, [
-            'Method' => 'GetLiveStream',
-            'Pars' => [
-                'CHANNEL_ID' => (int)$externalId,
-                'clientip'   => $clientIp 
-            ],
-            'urltype' => 'flussonic'
-        ]);
+          $response = Http::withoutVerifying()->withHeaders([
+        'Origin' => 'https://222.mediabox.ge',
+        'Referer' => 'https://222.mediabox.ge/',
+        'User-Agent' => 'PostmanRuntime/7.51.0',
+    ])->post($this->baseUrl, [
+        'Method' => 'GetLiveStream',
+        'Pars' => [
+            'CHANNEL_ID' => (int)$externalId,
+            'clientip'   => $clientIp
+        ],
+        'urltype' => 'flussonic'
+    ]);
         \Illuminate\Support\Facades\Log::info('Legacy API Response', [
         'id' => $externalId, 
         'ip' => $clientIp, 
@@ -47,11 +51,15 @@ class SyncingService
 
 public function getArchiveUrl(string $externalId, int $startEpoch, string $clientIp): ?array
 {
-    $response = Http::withoutVerifying()->post($this->baseUrl, [
+    $response = Http::withoutVerifying()->withHeaders([
+        'Origin' => 'https://222.mediabox.ge',
+        'Referer' => 'https://222.mediabox.ge/',
+        'User-Agent' => 'PostmanRuntime/7.51.0',
+    ])->post($this->baseUrl, [
         'Method' => 'GetArchiveStream',
         'Pars' => [
             'CHANNEL_ID' => (int) $externalId,
-            'clientip'   => $clientIp 
+            'clientip'   => $clientIp
         ],
         'urltype' => 'flussonic',
     ]);
