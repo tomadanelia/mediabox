@@ -27,7 +27,11 @@ class SyncingService
             ],
             'urltype' => 'flussonic'
         ]);
-
+        \Illuminate\Support\Facades\Log::info('Legacy API Response', [
+        'id' => $externalId, 
+        'ip' => $clientIp, 
+        'body' => $response->json()
+    ]);
         if ($response->successful()) {
             $data = $response->json();
             if (!empty($data['URL'])) {
