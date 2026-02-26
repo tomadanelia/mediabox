@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
     $middleware->alias([
         'whitelist.ip' => IpWhiteList::class,
     ]);
+    $middleware->trustProxies(at: '*'); 
      $middleware->validateCsrfTokens(except: [
             'api/admin/categories',    
             'api/admin/categories/*',
