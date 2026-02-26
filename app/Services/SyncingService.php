@@ -27,9 +27,9 @@ class SyncingService
         'Method' => 'GetLiveStream',
         'Pars' => [
             'CHANNEL_ID' => (int)$externalId,
-            'clientip'   => $clientIp
         ],
-        'urltype' => 'flussonic'
+        'urltype' => 'flussonic',
+        'clientip'   => $clientIp,
     ]);
         \Illuminate\Support\Facades\Log::info('Legacy API Response', [
         'id' => $externalId, 
