@@ -49,10 +49,6 @@ public function getStreamUrl($id, Request $request): JsonResponse
     if (!$channel->is_free && !$this->canAccessChannel($channel)) {
              return response()->json(['message' => 'Subscription required'], 403);
     }
-
-    
-    $externalId = $channel->external_id;
-    $streamData = $this->syncing_service->getStreamUrl($externalId, $channel->is_free);
     
      $streamData = $this->syncing_service->getStreamUrl($channel->external_id, $request->ip());
     
