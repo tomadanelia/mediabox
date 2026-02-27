@@ -19,11 +19,16 @@ class SpaAuthController extends Controller
 
     public function verify(VerifyRequest $request): JsonResponse
     {
-        if (! $this->verificationService->validateOtp($request->user_id, $request->code)) {
+        
+        $login = $request->login;
+        $user = User::where('email', $login)
+                    ->orWhere('phone', $login)
+                    ->firstOrFail();
+        if (! $this->verificationService->validateOtp($user->id, $request->code)) {
             return response()->json(['message' => 'Invalid or expired code.'], 400);
         }
 
-        $user = User::findOrFail($request->user_id);
+        $user = User::findOrFail($user->id);
         if ($user->phone) $user->phone_verified_at = now();
         if ($user->email) $user->email_verified_at = now();
         $user->save();
@@ -39,11 +44,14 @@ class SpaAuthController extends Controller
 
     public function verifyLogin(VerifyRequest $request): JsonResponse
     {
-        if (! $this->verificationService->validateOtp($request->user_id, $request->code)) {
+        $login = $request->login;
+        $user = User::where('email', $login)
+                    ->orWhere('phone', $login)
+                    ->firstOrFail();
+        if (! $this->verificationService->validateOtp($user->id, $request->code)) {
             return response()->json(['message' => 'Invalid code.'], 400);
         }
 
-        $user = User::findOrFail($request->user_id);
         $this->verificationService->clearOtp($user->id);
 
         Auth::login($user);
