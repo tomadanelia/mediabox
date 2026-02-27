@@ -94,8 +94,14 @@ class AuthController extends Controller
         }
 
         if (! $user->email_verified_at && ! $user->phone_verified_at) {
-            return response()->json(['message' => 'Account not verified.'], 403);
-        }
+        $otp = $this->verificationService->generateAndSendcode($user);
+
+        return response()->json([
+            'message' => 'Account not verified.',
+            'user_id' => $user->id,
+            'code' => $otp // For testing
+        ], 403);
+    }
         
         RateLimiter::clear($throttleKey);
         $otp = $this->verificationService->generateAndSendcode($user);
