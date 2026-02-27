@@ -101,6 +101,7 @@ class AdminPlansController extends Controller
         ]);
 
         $plan->channels()->syncWithoutDetaching($validated['channel_ids']);
+        Channel::whereIn('id', $validated['channel_ids'])->update(['is_free' => false]);
         Cache::forget("plan_channels_{$planId}");
         return response()->json([
             'message' => 'Channels added to subscription plan successfully',
@@ -117,6 +118,7 @@ class AdminPlansController extends Controller
         ]);
 
         $plan->channels()->detach($validated['channel_ids']);
+        Channel::whereIn('id', $validated['channel_ids'])->update(['is_free' => true]);
         Cache::forget("plan_channels_{$planId}");
         return response()->json([
             'message' => 'Channels removed from subscription plan successfully',
