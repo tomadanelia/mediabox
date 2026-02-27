@@ -38,8 +38,6 @@ Route::prefix('auth')->group(function () {
             ->middleware('throttle:3,1');
         Route::post('/login/verify', [SpaAuthController::class, 'verifyLogin'])
             ->middleware('throttle:5,1');
-        Route::post('/logout', [SpaAuthController::class, 'logout'])
-            ->middleware('auth:sanctum');
      });
 });
 Route::get('/interpay/balance', [InterPayController::class, 'handle']);   

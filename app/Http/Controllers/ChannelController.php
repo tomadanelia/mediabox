@@ -163,18 +163,5 @@ public function heartbeat(Request $request): JsonResponse
     return response()->json(['status' => 'ok']);
 }
 
-public function streamAuth(Request $request): \Symfony\Component\HttpFoundation\Response
-{
-    $userId = $request->query('user_id');
-    $deviceId = $request->query('device_id');
-    $ip = $request->query('ip');
 
-    if (!$userId || !$deviceId) {
-        return response()->noContent(400);
-    }
-
-    $allowed = $this->concurrencyService->isSessionAlive($userId, $deviceId, $ip);
-    
-    return response()->noContent($allowed ? 200 : 403);
-}
 }
