@@ -30,6 +30,7 @@ class ChannelController extends Controller
                     'number' => $channel->number,
                     "category"=>$channel->category?->name_en ?? null,
                     "category_id"=>$channel->category_id,
+                    'is_free' => $channel->is_free,
                 ];
             });
         return response()->json($channels);
