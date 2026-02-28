@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\SubscriptionPlan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\JsonResponse;
+use App\Models\Channel;
+
 class AdminPlansController extends Controller
 {
     public function allPlans(): JsonResponse
