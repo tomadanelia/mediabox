@@ -13,6 +13,7 @@ use App\Http\Controllers\SpaAuthController;
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/categories', [ChannelController::class, 'getCategories']);
+    Route::get('/{id}/plans', [ChannelController::class, 'getChannelPlans']);
     Route::get('/{id}/stream', [ChannelController::class, 'getStreamUrl']); 
     Route::get('/{id}/programs', [ChannelController::class, 'programs']);
     Route::get('/{id}/programs/all',[ChannelController::class, 'allPrograms']);

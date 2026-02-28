@@ -35,6 +35,25 @@ class ChannelController extends Controller
             });
         return response()->json($channels);
     }
+    public function getChannelPlans($id): JsonResponse
+{
+    $channel = Channel::where('external_id', $id)->firstOrFail();
+    $plans = $channel->plans()->where('is_active', true)->get([
+        'subscription_plans.id', 
+        'name_ka', 
+        'name_en', 
+        'price', 
+        'duration_days'
+    ]);
+
+    return response()->json([
+        'external_id' => $id,
+        'channel_name_ka' => $channel->name_ka,
+        'channel_name_en' => $channel->name_en,
+        'is_free' => $channel->is_free,
+        'required_plans' => $plans
+    ]);
+}
     
 public function getCategories(): JsonResponse
 {
