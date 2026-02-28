@@ -12,10 +12,13 @@ class CheckBalanceService
         $logId = $this->logCallback($request);
         
         try {
-            $accountId = $request->input('CUSTOMER_ID');
             
-            $account = Account::where('id', $accountId)->first();
-            
+            $identifier = $request->input('CUSTOMER_ID'); 
+        
+        $account = Account::whereHas('user', function($query) use ($identifier) {
+            $query->where('username', $identifier)
+                  ->orWhere('phone', $identifier);
+        })->first();
             if (!$account) {
                 $response = ['message' => 'Error,Customer not found.'];
                 $this->updateCallbackLog($logId, $response, 404);

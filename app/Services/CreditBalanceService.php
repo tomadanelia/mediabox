@@ -15,8 +15,21 @@ class CreditBalanceService
         
         try {
             $result = DB::transaction(function () use ($request) {
-                $accountId = $request->input('CUSTOMER_ID');
-                $paymentId = $request->input('PAYMENT_ID');
+$identifier = $request->input('CUSTOMER_ID');
+    
+         $account = Account::whereHas('user', function($query) use ($identifier) {
+        $query->where('username', $identifier)
+              ->orWhere('phone', $identifier);
+         })->lockForUpdate()->first();   
+                 $accountId = $account->id ?? null;
+                 if (!$accountId) {
+                    return [
+                        'success' => false,
+                        'message' => 'Error,Customer not found.',
+                        'status' => 404
+                    ];
+                }
+                 $paymentId = $request->input('PAYMENT_ID');
                 $amount = (int) $request->input('PAY_AMOUNT');
                 
                 $paymentExists = InterpayPayment::where('payment_id', $paymentId)
@@ -28,18 +41,6 @@ class CreditBalanceService
                         'success' => false,
                         'message' => 'Error,Payment already processed.',
                         'status' => 200
-                    ];
-                }
-                
-                $account = Account::where('id', $accountId)
-                    ->lockForUpdate()
-                    ->first();
-                    
-                if (!$account) {
-                    return [
-                        'success' => false,
-                        'message' => 'Error,Customer not found.',
-                        'status' => 404
                     ];
                 }
                 
