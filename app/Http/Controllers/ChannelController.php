@@ -16,25 +16,50 @@ class ChannelController extends Controller
     ) {}
 
     public function getChannelFacade(): JsonResponse
-    {
-        $channels = Channel::with('category')
+{
+    $user = Auth::guard('sanctum')->user();
+    
+    $query = Channel::with('category')
         ->where('is_active', true)
-            ->orderBy('number', 'asc') 
-            ->get()
-            ->map(function ($channel) {
-                return [
-                    'id' => $channel->external_id, 
-                    'uuid' => $channel->id,       
-                    'name' => $channel->name_ka,   
-                    'logo' => $channel->icon_url,
-                    'number' => $channel->number,
-                    "category"=>$channel->category?->name_en ?? null,
-                    "category_id"=>$channel->category_id,
-                    'is_free' => $channel->is_free,
-                ];
-            });
-        return response()->json($channels);
+        ->orderBy('number', 'asc');
+
+    if ($user) {
+        $query->with('plans:subscription_plans.id');
     }
+
+    $allChannels = $query->get();
+    $userActivePlanIds = $user ? $user->getActivePlanIds() : [];
+
+    $accessibleIds = $allChannels->filter(function ($channel) use ($userActivePlanIds) {
+        if ($channel->is_free) return true;
+        
+        if (!empty($userActivePlanIds)) {
+            $requiredPlanIds = $channel->relationLoaded('plans') 
+                ? $channel->plans->pluck('id')->toArray() 
+                : $channel->getRequiredPlanIds();
+                
+            return !empty(array_intersect($requiredPlanIds, $userActivePlanIds));
+        }
+        return false;
+    })->pluck('external_id')->values()->toArray();
+
+    $formattedChannels = $allChannels->map(function ($channel) {
+        return [
+            'id' => $channel->external_id, 
+            'name' => $channel->name_ka,   
+            'logo' => $channel->icon_url,
+            'number' => $channel->number,
+            'category' => $channel->category?->name_en ?? null,
+            'category_id'=>$channel->category?->id,
+            'is_free' => $channel->is_free,
+        ];
+    });
+
+    return response()->json([
+        'channels' => $formattedChannels,
+        'accessible_external_ids' => $accessibleIds
+    ]);
+}
     public function getChannelPlans($id): JsonResponse
 {
     $channel = Channel::where('external_id', $id)->firstOrFail();
