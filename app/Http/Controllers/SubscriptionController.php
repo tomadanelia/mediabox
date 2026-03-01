@@ -43,7 +43,22 @@ class SubscriptionController extends Controller
             ];});
     return response()->json($plans);
 }
-    public function purchasePlan(User $user, string $planId): array
+    public function purchase(Request $request): JsonResponse
+{
+    $request->validate([
+        'plan_id' => 'required|uuid|exists:subscription_plans,id'
+    ]);
+
+    try {
+        $result = $this->purchaseService($request->user(), $request->plan_id);
+        return response()->json($result, 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => $e->getMessage()
+        ], 422);
+    }
+}
+    public function purchaseService(User $user, string $planId): array
     {
         return DB::transaction(function () use ($user, $planId) {
             $account = $user->account()->lockForUpdate()->first();
