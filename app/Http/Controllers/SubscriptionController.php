@@ -44,7 +44,10 @@ class SubscriptionController extends Controller
     ]);
 
     try {
-        $result = $this->subscriptionService($request->user(), $request->plan_id);
+        $result = $result = $this->subscriptionService->purchasePlan(
+    $request->user(),
+    $request->plan_id
+);
         return response()->json($result, 200);
     } catch (\Exception $e) {
         return response()->json([
