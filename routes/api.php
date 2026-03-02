@@ -9,7 +9,7 @@ use App\Http\Controllers\UserPreferencesController;
 use App\Http\Controllers\AdminCategoryController;
 use App\Http\Controllers\AdminPlansController;
 use App\Http\Controllers\SpaAuthController;
-
+use App\Http\Controllers\TvPairingController;
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/categories', [ChannelController::class, 'getCategories']);
