@@ -62,6 +62,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/user/preferences/watch', [UserPreferencesController::class, 'updateWatchHistory']);
     Route::get('/user/preferences/watch/last', [UserPreferencesController::class, 'getLastviewedChannels']);
     Route::get('/admin/dashboard', [AdminCategoryController::class, 'dashboard'])->middleware('auth:sanctum');
+    Route::post('/tv/pair', [TvPairingController::class, 'pair']);
 });
 Route::prefix('admin')->group(function () {
     Route::get('/users', [AdminCategoryController::class, 'users']);
@@ -85,3 +86,5 @@ Route::prefix('admin')->group(function () {
     });
 
 });
+Route::post('/tv/init', [TvPairingController::class, 'initialize']);
+Route::post('/tv/check', [TvPairingController::class, 'checkStatus']);
