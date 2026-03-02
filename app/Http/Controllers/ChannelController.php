@@ -45,6 +45,7 @@ class ChannelController extends Controller
 
     $formattedChannels = $allChannels->map(function ($channel) {
         return [
+            'uuid' => $channel->id,
             'id' => $channel->external_id, 
             'name' => $channel->name_ka,   
             'logo' => $channel->icon_url,
