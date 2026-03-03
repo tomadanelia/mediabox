@@ -43,6 +43,7 @@ class TvPairingController extends Controller
 
         if ($pairing->user_id) {
             $user = User::find($pairing->user_id);
+            $user->tokens()->where('name', 'tv_apk')->delete(); 
             $token = $user->createToken('tv_apk')->plainTextToken;
             
             $pairing->delete(); 
