@@ -161,6 +161,66 @@ class AuthController extends Controller
 
     }
 
+public function forgotPassword(Request $request): JsonResponse
+{
+    $request->validate(['login' => 'required|string']);
+
+    $loginType = filter_var($request->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
+    $user = User::where($loginType, $request->login)->first();
+
+    if (!$user) {
+        return response()->json(['message' => 'If an account exists, a code has been sent.']);
+    }
+
+    $cooldownKey = 'password_reset_cooldown_' . $user->id;
+    if (Cache::has($cooldownKey)) {
+        return response()->json(['message' => 'Please wait before requesting a new code.'], 429);
+    }
+
+    $otp = $this->verificationService->generateAndSendcode($user);
+    Cache::put($cooldownKey, true, 60);
+
+    return response()->json([
+        'message' => 'Verification code sent.',
+        'code' => $otp // For testing
+    ]);
+}
+
+public function resetPassword(Request $request): JsonResponse
+{
+    $request->validate([
+        'login' => 'required|string',
+        'code' => 'required|string|size:6',
+        'password' => 'required|string|min:8|confirmed',
+    ]);
+
+    $loginType = filter_var($request->login, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
+    $user = User::where($loginType, $request->login)->firstOrFail();
+
+    if (! $this->verificationService->validateOtp($user->id, $request->code)) {
+        return response()->json(['message' => 'Invalid or expired verification code.'], 400);
+    }
+
+    $user->password = Hash::make($request->password);
+    
+    if ($loginType === 'email') $user->email_verified_at = now();
+    if ($loginType === 'phone') $user->phone_verified_at = now();
+    $user->tokens()->delete();
+    $user->setRememberToken(Str::random(60));
+
+    $user->save();
+
+    $this->verificationService->clearOtp($user->id);
+    if ($request->hasSession()) {
+        Auth::guard('web')->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+    }
+    
+
+    return response()->json(['message' => 'Password reset successfully. You can now log in.']);
+}
+
 
     public function logout(Request $request): JsonResponse
     {

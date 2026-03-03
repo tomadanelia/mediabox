@@ -31,7 +31,10 @@ Route::prefix('auth')->group(function () {
 
     Route::post('/register', [AuthController::class, 'register'])
         ->middleware('throttle:5,1');
-
+    Route::post('/password/forgot', [AuthController::class, 'forgotPassword'])
+    ->middleware('throttle:3,1');
+    Route::post('/password/reset', [AuthController::class, 'resetPassword'])
+    ->middleware('throttle:3,1');
     Route::post('/resend', [AuthController::class, 'resendCode'])
         ->middleware('throttle:3,1');
     Route::prefix('web')->group(function () {
