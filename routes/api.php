@@ -66,6 +66,10 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 Route::prefix('admin')->group(function () {
     Route::get('/users', [AdminCategoryController::class, 'users']);
+    Route::prefix('users/{userId}')->group(function () {
+        Route::post('/grant-plan', [AdminPlansController::class, 'grantPlanToUser']);
+        Route::post('/revoke-plan', [AdminPlansController::class, 'revokePlanFromUser']);
+    });
     Route::prefix('categories')->group(function () {
         Route::post('/', [AdminCategoryController::class, 'addCategories']);
         Route::get('/{categoryId}', [AdminCategoryController::class, 'getChannelsForCategory']);

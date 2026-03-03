@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\SubscriptionPlan;
 use Illuminate\Support\Facades\Cache;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use App\Models\Channel;
 
@@ -138,5 +139,51 @@ class AdminPlansController extends Controller
             'data' => $plan->channels()->get()
         ],200);
     }
+    public function grantPlanToUser(Request $request, string $userId)
+{
+    $request->validate([
+        'plan_id' => 'required|uuid|exists:subscription_plans,id',
+        'days' => 'nullable|integer|min:1' 
+    ]);
+
+    $user = User::findOrFail($userId);
+    $plan = SubscriptionPlan::findOrFail($request->plan_id);
+    $duration = $request->input('days', $plan->duration_days);
+
+    $user->subscriptionPlans()->syncWithoutDetaching([
+        $plan->id => [
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'started_at' => now(),
+            'expires_at' => now()->addDays($duration),
+            'is_active' => true,
+            'auto_renew' => false,
+        ]
+    ]);
+
+    Cache::forget("user_plan_ids_{$user->id}");
+
+    return response()->json([
+        'message' => "Plan '{$plan->name_en}' granted to user successfully.",
+        'expires_at' => now()->addDays($duration)
+    ]);
+}
+
+
+public function revokePlanFromUser(Request $request, string $userId)
+{
+    $request->validate([
+        'plan_id' => 'required|uuid|exists:subscription_plans,id',
+    ]);
+
+    $user = User::findOrFail($userId);
+
+    $user->subscriptionPlans()->detach($request->plan_id);
+
+    Cache::forget("user_plan_ids_{$user->id}");
+
+    return response()->json([
+        'message' => "Plan revoked from user successfully."
+    ]);
+}
 
 }
