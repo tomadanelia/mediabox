@@ -16,6 +16,34 @@ class AdminPlansController extends Controller
         $plans = SubscriptionPlan::all();
         return response()->json($plans);
     }
+    public function getUserPlans(string $userId): JsonResponse
+{
+    $user = User::findOrFail($userId);
+
+    $plans = $user->subscriptionPlans()->get()->map(function ($plan) {
+        return [
+            'id' => $plan->id,
+            'name_en' => $plan->name_en,
+            'name_ka' => $plan->name_ka,
+            'price' => $plan->price,
+            'started_at' => $plan->pivot->started_at,
+            'expires_at' => $plan->pivot->expires_at,
+            'is_active' => $plan->pivot->is_active,
+            'status' => ($plan->pivot->is_active && $plan->pivot->expires_at > now()) 
+                        ? 'active' 
+                        : 'expired'
+        ];
+    });
+
+    return response()->json([
+        'user' => [
+            'id' => $user->id,
+            'username' => $user->username,
+            'full_name' => $user->full_name,
+        ],
+        'plans' => $plans
+    ]);
+}
     public function addPlan(Request $request)
     {
         $validated = $request->validate([

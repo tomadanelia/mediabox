@@ -72,6 +72,7 @@ Route::prefix('admin')->group(function () {
     Route::prefix('users/{userId}')->group(function () {
         Route::post('/grant-plan', [AdminPlansController::class, 'grantPlanToUser']);
         Route::post('/revoke-plan', [AdminPlansController::class, 'revokePlanFromUser']);
+        Route::get('/plans',[AdminPlansController::class,'getUserPlans']);
     });
     Route::prefix('categories')->group(function () {
         Route::post('/', [AdminCategoryController::class, 'addCategories']);
