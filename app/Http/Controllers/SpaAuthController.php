@@ -48,13 +48,14 @@ class SpaAuthController extends Controller
         $user = User::where('email', $login)
                     ->orWhere('phone', $login)
                     ->firstOrFail();
+        $remember = $request->boolean('remember'); 
         if (! $this->verificationService->validateOtp($user->id, $request->code)) {
             return response()->json(['message' => 'Invalid code.'], 400);
         }
 
         $this->verificationService->clearOtp($user->id);
 
-        Auth::login($user);
+        Auth::login($user, $remember); 
         $request->session()->regenerate();
         
         return response()->json(['message' => 'Login successful', 'user' => $user]);
