@@ -68,6 +68,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/tv/pair', [TvPairingController::class, 'pair']);
 });
 Route::prefix('admin')->group(function () {
+    Route::post('/logos', [SettingController::class, 'updateLogos']);
     Route::get('/users', [AdminCategoryController::class, 'users']);
     Route::prefix('users/{userId}')->group(function () {
         Route::post('/grant-plan', [AdminPlansController::class, 'grantPlanToUser']);
@@ -96,3 +97,4 @@ Route::prefix('admin')->group(function () {
 });
 Route::post('/tv/init', [TvPairingController::class, 'initialize']);
 Route::post('/tv/check', [TvPairingController::class, 'checkStatus']);
+Route::get('/settings/logos', [SettingController::class, 'getLogos']);
