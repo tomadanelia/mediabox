@@ -7,18 +7,24 @@ use Illuminate\Http\JsonResponse;
 
 class SettingController extends Controller
 {
-    public function updateLogos(Request $request): JsonResponse
-    {
-        $request->validate([
-            'logo_light' => 'required|string', 
-            'logo_dark'  => 'required|string',
-        ]);
+   public function updateLogo(Request $request)
+{
+    $request->validate([
+        'svg' => 'required|string'
+    ]);
 
-        SiteSetting::updateOrCreate(['key' => 'logo_light'], ['value' => $request->logo_light]);
-        SiteSetting::updateOrCreate(['key' => 'logo_dark'],  ['value' => $request->logo_dark]);
+    $filename = 'logos/logo.svg';
+    Storage::disk('public')->put($filename, $request->svg);
 
-        return response()->json(['message' => 'Logos updated successfully']);
-    }
+    $url = '/storage/' . $filename;
+
+    Setting::updateOrCreate(
+        ['key' => 'site_logo'],
+        ['value' => $url]
+    );
+
+    return response()->json(['logo' => $url]);
+}
 
     public function getLogos(): JsonResponse
     {
