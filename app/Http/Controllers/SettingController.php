@@ -3,33 +3,56 @@ namespace App\Http\Controllers;
 
 use App\Models\SiteSetting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\JsonResponse;
 
 class SettingController extends Controller
 {
-   public function updateLogo(Request $request)
-{
-    $request->validate([
-        'svg' => 'required|string'
-    ]);
+    public function updateLogos(Request $request): JsonResponse
+    {
+        $request->validate([
+            'logo_light' => 'nullable|string', 
+            'logo_dark'  => 'nullable|string',
+        ]);
 
-    $filename = 'logos/logo.svg';
-    Storage::disk('public')->put($filename, $request->svg);
+        $results = [];
 
-    $url = '/storage/' . $filename;
+        if ($request->filled('logo_light')) {
+            $path = 'logos/logo_light.svg';
+            Storage::disk('public')->put($path, $request->logo_light);
+            
+            SiteSetting::updateOrCreate(
+                ['key' => 'logo_light'],
+                ['value' => $path]
+            );
+            $results['logo_light'] = Storage::url($path);
+        }
 
-    Setting::updateOrCreate(
-        ['key' => 'site_logo'],
-        ['value' => $url]
-    );
+        if ($request->filled('logo_dark')) {
+            $path = 'logos/logo_dark.svg';
+            Storage::disk('public')->put($path, $request->logo_dark);
+            
+            SiteSetting::updateOrCreate(
+                ['key' => 'logo_dark'],
+                ['value' => $path]
+            );
+            $results['logo_dark'] = Storage::url($path);
+        }
 
-    return response()->json(['logo' => $url]);
-}
+        return response()->json([
+            'message' => 'Logos saved as files and paths updated in DB',
+            'urls' => $results
+        ]);
+    }
 
     public function getLogos(): JsonResponse
     {
-        $logos = SiteSetting::whereIn('key', ['logo_light', 'logo_dark'])->pluck('value', 'key');
+        $settings = SiteSetting::whereIn('key', ['logo_light', 'logo_dark'])->get();
         
-        return response()->json($logos);
+        $data = $settings->pluck('value', 'key')->map(function($path) {
+            return asset(Storage::url($path));
+        });
+
+        return response()->json($data);
     }
 }
