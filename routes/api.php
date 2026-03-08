@@ -11,6 +11,7 @@ use App\Http\Controllers\AdminPlansController;
 use App\Http\Controllers\SpaAuthController;
 use App\Http\Controllers\TvPairingController;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\RemoteController;
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/categories', [ChannelController::class, 'getCategories']);
@@ -21,11 +22,7 @@ Route::prefix('channels')->group(function () {
     Route::get('/{id}/archive', [ChannelController::class, 'archive']);
 });
 Route::prefix('auth')->group(function () {
-    Route::get('/user/devices', function (Request $request) {
-        return $request->user()->load('devices'); 
-    });
-    Route::get('/user/devices', [RemoteController::class, 'getMyDevices']);
-    Route::post('/tv/remote/ready', [RemoteController::class, 'tvReady']);
+
     Route::post('/login', [AuthController::class, 'login'])
         ->middleware('throttle:3,1');
 
@@ -72,6 +69,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user/preferences/watch/last', [UserPreferencesController::class, 'getLastviewedChannels']);
     Route::get('/admin/dashboard', [AdminCategoryController::class, 'dashboard'])->middleware('auth:sanctum');
     Route::post('/tv/pair', [TvPairingController::class, 'pair']);
+    Route::get('/user/devices', [RemoteController::class, 'getMyDevices']);
+    Route::post('/tv/remote/ready', [RemoteController::class, 'tvReady']);
 });
 Route::prefix('admin')->group(function () {
     Route::post('/logos', [SettingController::class, 'updateLogos']);
