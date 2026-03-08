@@ -5,6 +5,8 @@ use App\Models\TvPairing;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Models\UserDevice;
+
 
 class TvPairingController extends Controller
 {
@@ -41,22 +43,27 @@ class TvPairingController extends Controller
             return response()->json(['status' => 'expired'], 410);
         }
 
-        if ($pairing->user_id) {
-            $user = User::find($pairing->user_id);
-            $user->tokens()->where('name', 'tv_apk')->delete(); 
-            $token = $user->createToken('tv_apk')->plainTextToken;
-            
-            $pairing->delete(); 
+       if ($pairing->user_id) {
+    $user = User::find($pairing->user_id);
+    UserDevice::updateOrCreate(
+        ['device_id' => $pairing->device_id],
+        ['user_id' => $user->id, 'device_name' => 'My Android TV']
+    );
 
-            return response()->json([
-                'status' => 'paired',
-                'access_token' => $token,
-                'user' => $user
-            ]);
-        }
+    $user->tokens()->where('name', 'tv_apk')->delete(); 
+    $token = $user->createToken('tv_apk')->plainTextToken;
+    $pairing->delete(); 
+    return response()->json([
+        'status' => 'paired',
+        'access_token' => $token,
+        'user' => $user,
+        'device_id' => $pairing->device_id 
+    ]);
+}
 
         return response()->json(['status' => 'pending']);
     }
+    
 
     //this one is called by my web spa
     public function pair(Request $request)

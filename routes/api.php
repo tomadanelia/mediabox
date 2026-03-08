@@ -21,6 +21,11 @@ Route::prefix('channels')->group(function () {
     Route::get('/{id}/archive', [ChannelController::class, 'archive']);
 });
 Route::prefix('auth')->group(function () {
+    Route::get('/user/devices', function (Request $request) {
+        return $request->user()->load('devices'); 
+    });
+    Route::get('/user/devices', [RemoteController::class, 'getMyDevices']);
+    Route::post('/tv/remote/ready', [RemoteController::class, 'tvReady']);
     Route::post('/login', [AuthController::class, 'login'])
         ->middleware('throttle:3,1');
 

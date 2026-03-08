@@ -12,6 +12,8 @@ use App\Models\SubscriptionPlan;
 use Illuminate\Support\Facades\Cache;
 use App\Models\UserSubscription;
 use App\Models\Channel;
+use App\Models\UserDevice;
+
 
 class User extends Authenticatable
 {
@@ -89,6 +91,10 @@ class User extends Authenticatable
     public function watchHistories()
 {
     return $this->hasMany(UserWatchHistory::class);
+}
+    public function devices()
+{
+    return $this->hasMany(UserDevice::class);
 }
 
 }
