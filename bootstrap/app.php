@@ -22,7 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'api/admin/categories',    
             'api/admin/categories/*',
             'api/admin/plans',
-            'api/admin/plans/*'  // have to change this shit
+            'api/admin/plans/*',
+            'api/broadcasting/auth',  // have to change this shit
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
