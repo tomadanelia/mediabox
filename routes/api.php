@@ -13,6 +13,7 @@ use App\Http\Controllers\TvPairingController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\RemoteController;
 use Illuminate\Support\Facades\Broadcast;
+use App\Http\Controllers\RadioController;
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/categories', [ChannelController::class, 'getCategories']);
@@ -105,3 +106,7 @@ Route::prefix('admin')->group(function () {
 Route::post('/tv/init', [TvPairingController::class, 'initialize']);
 Route::post('/tv/check', [TvPairingController::class, 'checkStatus']);
 Route::get('/settings/logos', [SettingController::class, 'getLogos']);
+Route::prefix('radio')->group(function () {
+    Route::get('/', [RadioController::class, 'index']);
+    Route::get('/{id}/stream', [RadioController::class, 'getStreamUrl']);
+});
