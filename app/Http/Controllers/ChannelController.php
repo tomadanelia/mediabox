@@ -50,7 +50,8 @@ class ChannelController extends Controller
             'name' => $channel->name_ka,   
             'logo' => $channel->icon_url,
             'number' => $channel->number,
-            'category' => $channel->category?->name_en ?? null,
+            'category_en' => $channel->category?->name_en ?? null,
+            'category_ka' => $channel->category?->name_ka ?? null,
             'category_id'=>$channel->category?->id,
             'is_free' => $channel->is_free,
         ];
