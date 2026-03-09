@@ -22,7 +22,7 @@ class RemoteController extends Controller
 
         return response()->json([
             'status' => 'waiting_for_phone',
-            'channel' => "private-tv.remote.{$device->device_id}",
+           'channel' => "tv.remote.{$device->device_id}",
             'reverb_config' => [
                 'key' => config('broadcasting.connections.reverb.key'),
                 'host' => config('broadcasting.connections.reverb.options.host'),
@@ -39,7 +39,7 @@ class RemoteController extends Controller
                 'device_id' => $device->device_id,
                 'name' => $device->device_name,
                 'is_ready' => Cache::has("tv_session_ready:{$device->device_id}"),
-                'channel' => "private-tv.remote.{$device->device_id}"
+                'channel' => "tv.remote.{$device->device_id}",
             ];
         });
 
