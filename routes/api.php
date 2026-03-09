@@ -12,6 +12,7 @@ use App\Http\Controllers\SpaAuthController;
 use App\Http\Controllers\TvPairingController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\RemoteController;
+use Illuminate\Support\Facades\Broadcast;
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/categories', [ChannelController::class, 'getCategories']);
@@ -71,6 +72,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/tv/pair', [TvPairingController::class, 'pair']);
     Route::get('/user/devices', [RemoteController::class, 'getMyDevices']);
     Route::post('/tv/remote/ready', [RemoteController::class, 'tvReady']);
+    Broadcast::routes(['middleware' => ['auth:sanctum']]);
 });
 Route::prefix('admin')->group(function () {
     Route::post('/logos', [SettingController::class, 'updateLogos']);
