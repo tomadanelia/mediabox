@@ -26,3 +26,5 @@ _ide_helper_models.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+routes/channels.php.backup
+.env.save
