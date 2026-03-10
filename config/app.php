@@ -40,5 +40,7 @@ return [
         'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
+    'jwt_socket_secret' => env('JWT_SOCKET_SECRET'),
+    'jwt_algo' => env('JWT_ALGO', 'HS256'),
 
 ];
