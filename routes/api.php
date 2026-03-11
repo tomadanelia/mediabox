@@ -70,7 +70,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/user/preferences/watch', [UserPreferencesController::class, 'updateWatchHistory']);
     Route::get('/user/preferences/watch/last', [UserPreferencesController::class, 'getLastviewedChannels']);
     Route::get('/admin/dashboard', [AdminCategoryController::class, 'dashboard'])->middleware('auth:sanctum');
-    Route::post('/tv/pair', [TvPairingController::class, 'pair']);
     Route::get('/user/devices', [RemoteController::class, 'getMyDevices']);
     Route::post('/tv/remote/ready', [RemoteController::class, 'tvReady']);
     Broadcast::routes(['middleware' => ['auth:sanctum']]);
@@ -104,7 +103,11 @@ Route::prefix('admin')->group(function () {
 
 });
 Route::post('/tv/init', [TvPairingController::class, 'initialize']);
-Route::post('/tv/check', [TvPairingController::class, 'checkStatus']);
+Route::post('/tv/claim', [TvPairingController::class, 'claim'])
+    ->middleware('throttle:5,1');
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/tv/pair', [TvPairingController::class, 'pair']);
+});
 Route::get('/settings/logos', [SettingController::class, 'getLogos']);
 Route::prefix('radio')->group(function () {
     Route::get('/', [RadioController::class, 'index']);

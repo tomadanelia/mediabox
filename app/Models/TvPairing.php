@@ -11,6 +11,7 @@ class TvPairing extends Model
     protected $fillable = [
         'pairing_code',
         'device_id',
+        'claim_token', 
         'user_id',
         'expires_at',
     ];

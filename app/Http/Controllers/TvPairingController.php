@@ -10,72 +10,76 @@ use App\Models\UserDevice;
 
 class TvPairingController extends Controller
 {
-    public function initialize(Request $request)
-    {
-        $request->validate(['device_id' => 'required|string']);
+    public function initialize(Request $request, SocketTokenService $socketService)
+{
+    $request->validate(['device_id' => 'required|string']);
 
-        $code = strtoupper(Str::random(6));
-        
-        TvPairing::create([
-            'pairing_code' => $code,
-            'device_id' => $request->device_id,
-            'expires_at' => now()->addMinutes(10),
-        ]);
+    $code = strtoupper(Str::random(6));
+    
+    TvPairing::create([
+        'pairing_code' => $code,
+        'device_id' => $request->device_id,
+        'expires_at' => now()->addMinutes(10),
+    ]);
 
-        return response()->json([
-            'pairing_code' => $code,
-            'qr_url' => "https://tv-api.telecomm1.com/tv-register?code={$code}"
-        ]);
-    }
-
-    public function checkStatus(Request $request)
-    {
-        $request->validate([
-            'pairing_code' => 'required|string',
-            'device_id' => 'required|string'
-        ]);
-
-        $pairing = TvPairing::where('pairing_code', $request->pairing_code)
-            ->where('device_id', $request->device_id)
-            ->first();
-
-        if (!$pairing || $pairing->expires_at->isPast()) {
-            return response()->json(['status' => 'expired'], 410);
-        }
-
-       if ($pairing->user_id) {
-    $user = User::find($pairing->user_id);
-    UserDevice::updateOrCreate(
-        ['device_id' => $pairing->device_id],
-        ['user_id' => $user->id, 'device_name' => 'My Android TV']
+    $socketToken = $socketService->generateToken(
+        'device_' . $request->device_id,
+        "pairing_{$code}"
     );
 
-    $user->tokens()->where('name', 'tv_apk')->delete(); 
-    $token = $user->createToken('tv_apk')->plainTextToken;
-    $pairing->delete(); 
     return response()->json([
-        'status' => 'paired',
-        'access_token' => $token,
-        'user' => $user,
-        'device_id' => $pairing->device_id 
+        'pairing_code' => $code,
+        'socket_token' => $socketToken
     ]);
 }
 
-        return response()->json(['status' => 'pending']);
-    }
-    
+public function pair(Request $request)
+{
+    $request->validate(['pairing_code' => 'required|string']);
 
-    //this one is called by my web spa
-    public function pair(Request $request)
-    {
-        $request->validate(['pairing_code' => 'required|string']);
+    $pairing = TvPairing::where('pairing_code', $request->pairing_code)
+        ->where('expires_at', '>', now())
+        ->firstOrFail();
 
-        $pairing = TvPairing::where('pairing_code', $request->pairing_code)
-            ->where('expires_at', '>', now())
-            ->firstOrFail();
+    $claimToken = Str::random(64);
+    $pairing->update([
+        'user_id' => $request->user()->id,
+        'claim_token' => hash('sha256', $claimToken)
+    ]);
+    Redis::publish('pairing_events', json_encode([
+        'pairing_code' => $request->pairing_code,
+        'status' => 'ready_to_claim',
+        'claim_token' => $claimToken 
+    ]));
 
-        $pairing->update(['user_id' => $request->user()->id]);
+    return response()->json(['message' => 'Authorized. TV notified.']);
+}
 
-        return response()->json(['message' => 'TV successfully paired!']);
-    }
+public function claim(Request $request)
+{
+    $request->validate([
+        'claim_token' => 'required|string',
+        'device_id' => 'required|string'
+    ]);
+
+    $pairing = TvPairing::where('claim_token', hash('sha256', $request->claim_token))
+        ->where('device_id', $request->device_id)
+        ->where('expires_at', '>', now())
+        ->firstOrFail();
+
+    $user = $pairing->user;
+
+    UserDevice::updateOrCreate(
+        ['device_id' => $pairing->device_id],
+        ['user_id' => $user->id, 'device_name' => 'Android TV']
+    );
+
+    $token = $user->createToken('tv_apk')->plainTextToken;
+    $pairing->delete(); 
+
+    return response()->json([
+        'access_token' => $token,
+        'user' => $user->load('account')
+    ]);
+}
 }
