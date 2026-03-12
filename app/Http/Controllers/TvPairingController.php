@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Models\UserDevice;
 use App\Services\SocketTokenService;
-
+use Illuminate\Support\Facades\Redis;
 
 class TvPairingController extends Controller
 {
