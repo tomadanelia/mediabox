@@ -14,6 +14,7 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\RemoteController;
 use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\RadioController;
+use App\Http\Controllers\ProfileController;
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/categories', [ChannelController::class, 'getCategories']);
@@ -57,7 +58,8 @@ Route::get('/internal/stream-auth', [ChannelController::class, 'streamAuth'])->m
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::post('/auth/web/logout', [SpaAuthController::class, 'logout']);
-
+    Route::get('/user', [ProfileController::class, 'show']);
+    Route::put('/user/profile', [ProfileController::class, 'update']);
     Route::get('/user', function (Request $request) {
         return $request->user()->load('account');
     });
