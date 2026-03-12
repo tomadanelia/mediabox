@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Models\UserDevice;
+use App\Services\SocketTokenService;
 
 
 class TvPairingController extends Controller
