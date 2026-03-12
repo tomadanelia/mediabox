@@ -27,6 +27,7 @@ class User extends Authenticatable
         'full_name',
         'avatar_url',
         'role',
+        'numeric_id'
         
     ];
 
@@ -96,5 +97,27 @@ class User extends Authenticatable
 {
     return $this->hasMany(UserDevice::class);
 }
+   protected static function booted()
+{
+    static::creating(function ($user) {
+        $user->numeric_id = (User::max('numeric_id') ?? 99999) + 1;
+    });
+}
+// Migration: 2024_xx_xx_make_numeric_id_autoincrement.php
 
+//public function up(): void
+//{
+    // TODO: Uncomment when deploying to MySQL
+    // This makes numeric_id truly auto-increment at DB level
+    // Run AFTER switching from SQLite to MySQL
+    
+    // Schema::table('users', function (Blueprint $table) {
+    //     $table->unsignedBigInteger('numeric_id')
+    //           ->nullable(false)
+    //           ->change();
+    // });
+    
+    // DB::statement('ALTER TABLE users MODIFY numeric_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE;');
+    // DB::statement('ALTER TABLE users AUTO_INCREMENT = 100000;');
+//}
 }

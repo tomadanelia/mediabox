@@ -17,12 +17,11 @@ class VerificationService
     {
         $otp= rand(100000,999999);
         Cache::put('verification_code_'.$user->id,$otp,300);
+        $displayName = $user->username ?? $user->email;
         if ($user->email) {
-            Mail::to($user->email)->send(new VerificationCodeMail($otp, $user->username));
-        } elseif ($user->phone) {
-            // SMS logic would go here when implemented
-            Log::info("SMS OTP for {$user->phone}: {$otp}");
+            Mail::to($user->email)->send(new VerificationCodeMail($otp, $displayName));
         }
+        // SMS logic would go here when implemented
         return $otp;
 
     }
