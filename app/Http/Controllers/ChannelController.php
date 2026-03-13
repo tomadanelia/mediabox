@@ -91,13 +91,13 @@ public function getCategories(): JsonResponse
 
 public function getStreamUrl($id, Request $request): JsonResponse
 {
-      \Illuminate\Support\Facades\Log::info('Stream Request Debug', [
+     /* \Illuminate\Support\Facades\Log::info('Stream Request Debug', [
         'url' => $request->fullUrl(),
         'method' => $request->method(),
         'headers' => $request->headers->all(),
         'payload' => $request->all(), // This shows the JSON body or Query params
         'user_id' => $request->user()?->id
-    ]);
+    ]);*/
     $channel = Channel::where('external_id', $id)->firstOrFail();
     
     if (!$channel->is_free && !$this->canAccessChannel($channel)) {

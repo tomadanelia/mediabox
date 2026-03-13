@@ -15,6 +15,7 @@ use App\Http\Controllers\RemoteController;
 use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\RadioController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\AdminChannelController;
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/categories', [ChannelController::class, 'getCategories']);
@@ -78,6 +79,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 Route::prefix('admin')->group(function () {
     Route::post('/logos', [SettingController::class, 'updateLogos']);
+    Route::put('/channels/{id}', [AdminChannelController::class, 'update']);
     Route::get('/users', [AdminCategoryController::class, 'users']);
     Route::prefix('users/{userId}')->group(function () {
         Route::post('/grant-plan', [AdminPlansController::class, 'grantPlanToUser']);
