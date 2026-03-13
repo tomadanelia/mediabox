@@ -78,6 +78,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Broadcast::routes(['middleware' => ['auth:sanctum']]);
 });
 Route::prefix('admin')->group(function () {
+    Route::get('/users/search', [AdminUserController::class, 'search']);
     Route::post('/users', [AdminUserController::class, 'store']);
     Route::post('/users/adjust-balance', [AdminUserController::class, 'adjustBalance']);
     Route::post('/logos', [SettingController::class, 'updateLogos']);

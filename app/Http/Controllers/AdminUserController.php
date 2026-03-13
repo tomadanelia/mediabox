@@ -86,4 +86,60 @@ class AdminUserController extends Controller
             ]);
         });
     }
+    public function search(Request $request): JsonResponse
+{
+    $request->validate([
+        'q' => 'required|string|min:1'
+    ]);
+
+    $query = $request->input('q');
+
+   $user = User::where(function($q) use ($query) {
+    if (str_contains($query, '@')) {
+        $q->where('email', $query);
+    } else if (preg_match('/^\+?[\d\s\-]+$/', $query)) {
+        $digits = preg_replace('/[\s\-]/', '', ltrim($query, '+'));
+        if (strlen($digits) === 6) {
+            $q->where('numeric_id', (int) $digits);
+        } else {
+            $q->where('phone', $digits);
+        }
+    } else {
+        $q->where('username', $query);
+    }
+})->select(['id','numeric_id','username','email','phone','full_name','role','created_at'])
+                ->with(['account', 'subscriptionPlans' => function($q) {
+                    $q->wherePivot('expires_at', '>', now())
+                      ->wherePivot('is_active', true);
+                }])
+                ->first();
+
+    if (!$user) {
+        return response()->json(['message' => 'User not found'], 404);
+    }
+
+    return response()->json([
+        'user' => [
+            'id' => $user->id,
+            'numeric_id' => $user->numeric_id,
+            'username' => $user->username,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'full_name' => $user->full_name,
+            'role' => $user->role,
+            'created_at' => $user->created_at,
+        ],
+        'account' => $user->account ? [
+        'balance' => $user->account->balance,
+        'status'  => $user->account->status,
+         ] : null,
+        'active_plans' => $user->subscriptionPlans->map(function($plan) {
+            return [
+                'name' => $plan->name_en,
+                'expires_at' => $plan->pivot->expires_at,
+                'days_left' => now()->diffInDays($plan->pivot->expires_at, false)
+            ];
+        })
+    ]);
+}
 }
