@@ -20,13 +20,12 @@ Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/categories', [ChannelController::class, 'getCategories']);
     Route::get('/{id}/plans', [ChannelController::class, 'getChannelPlans']);
-    Route::get('/{id}/stream', [ChannelController::class, 'getStreamUrl']); 
     Route::get('/{id}/programs', [ChannelController::class, 'programs']);
     Route::get('/{id}/programs/all',[ChannelController::class, 'allPrograms']);
+    Route::get('/{id}/stream', [ChannelController::class, 'getStreamUrl']); 
     Route::get('/{id}/archive', [ChannelController::class, 'archive']);
 });
 Route::prefix('auth')->group(function () {
-
     Route::post('/login', [AuthController::class, 'login'])
         ->middleware('throttle:3,1');
 

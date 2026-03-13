@@ -17,7 +17,8 @@ class ChannelController extends Controller
 
     public function getChannelFacade(): JsonResponse
 {
-    $user = Auth::guard('sanctum')->user();
+    Auth::shouldUse('sanctum');
+    $user = request()->user();
     
     $query = Channel::with('category')
         ->where('is_active', true)
@@ -91,13 +92,13 @@ public function getCategories(): JsonResponse
 
 public function getStreamUrl($id, Request $request): JsonResponse
 {
-     /* \Illuminate\Support\Facades\Log::info('Stream Request Debug', [
+    \Illuminate\Support\Facades\Log::info('Stream Request Debug', [
         'url' => $request->fullUrl(),
         'method' => $request->method(),
         'headers' => $request->headers->all(),
         'payload' => $request->all(), // This shows the JSON body or Query params
         'user_id' => $request->user()?->id
-    ]);*/
+    ]);
     $channel = Channel::where('external_id', $id)->firstOrFail();
     
     if (!$channel->is_free && !$this->canAccessChannel($channel)) {
@@ -157,10 +158,8 @@ public function getStreamUrl($id, Request $request): JsonResponse
     $channel = Channel::where('external_id', $id)->firstOrFail();
 
     if (!$channel->is_free && !$this->canAccessChannel($channel)) {
-            $user = Auth::guard('sanctum')->user();
-            $status = $user ? 403 : 401;
-            $message = $user ? 'Subscription required' : 'Login required';
-            return response()->json(['message' => $message], $status);
+    return response()->json(['message' => 'Subscription required'], 403);
+
     }
 
    $archiveData = $this->syncing_service->getArchiveUrl(
@@ -181,13 +180,11 @@ public function getStreamUrl($id, Request $request): JsonResponse
     if ($channel->is_free) {
         return true;
     }
-
-    $user = Auth::guard('sanctum')->user();
+    Auth::shouldUse('sanctum');
+    $user = request()->user();
     if (!$user) {
         return false;
     }
-
-    
     $requiredPlanIds = $channel->getRequiredPlanIds();
 
     if (empty($requiredPlanIds)) {
@@ -196,26 +193,6 @@ public function getStreamUrl($id, Request $request): JsonResponse
 
     $userPlanIds = $user->getActivePlanIds();
     return !empty(array_intersect($requiredPlanIds, $userPlanIds));
-}
-
-
-public function heartbeat(Request $request): JsonResponse
-{
-    $request->validate([
-        'device_id' => 'required|string|max:64',
-    ]);
-
-    $allowed = $this->concurrencyService->heartbeat(
-        $request->user()->id,
-        $request->input('device_id'),
-        $request->ip()
-    );
-
-    if (!$allowed) {
-        return response()->json(['message' => 'Session expired or limit reached'], 409);
-    }
-
-    return response()->json(['status' => 'ok']);
 }
 
 
