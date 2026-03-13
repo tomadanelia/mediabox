@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\RadioController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminChannelController;
+use App\Http\Controllers\AdminUserController;
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/categories', [ChannelController::class, 'getCategories']);
@@ -77,6 +78,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Broadcast::routes(['middleware' => ['auth:sanctum']]);
 });
 Route::prefix('admin')->group(function () {
+    Route::post('/users', [AdminUserController::class, 'store']);
+    Route::post('/users/adjust-balance', [AdminUserController::class, 'adjustBalance']);
     Route::post('/logos', [SettingController::class, 'updateLogos']);
     Route::put('/channels/{id}', [AdminChannelController::class, 'update']);
     Route::get('/users', [AdminCategoryController::class, 'users']);
