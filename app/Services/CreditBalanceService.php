@@ -18,8 +18,7 @@ class CreditBalanceService
 $identifier = $request->input('CUSTOMER_ID');
     
          $account = Account::whereHas('user', function($query) use ($identifier) {
-        $query->where('username', $identifier)
-              ->orWhere('phone', $identifier);
+        $query->where('numeric_id', $identifier);
          })->lockForUpdate()->first();   
                  $accountId = $account->id ?? null;
                  if (!$accountId) {

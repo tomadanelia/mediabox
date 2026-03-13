@@ -16,8 +16,7 @@ class CheckBalanceService
             $identifier = $request->input('CUSTOMER_ID'); 
         
         $account = Account::whereHas('user', function($query) use ($identifier) {
-            $query->where('username', $identifier)
-                  ->orWhere('phone', $identifier);
+            $query->where('numeric_id', $identifier);
         })->first();
             if (!$account) {
                 $response = ['message' => 'Error,Customer not found.'];
