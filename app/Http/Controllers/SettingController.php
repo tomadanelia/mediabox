@@ -46,13 +46,20 @@ class SettingController extends Controller
     }
 
     public function getLogos(): JsonResponse
-    {
-        $settings = SiteSetting::whereIn('key', ['logo_light', 'logo_dark'])->get();
-        
-        $data = $settings->pluck('value', 'key')->map(function($path) {
-            return asset(Storage::url($path));
-        });
+{
+    $settings = SiteSetting::whereIn('key', ['logo_light', 'logo_dark'])->get();
 
-        return response()->json($data);
-    }
+    $data = $settings->pluck('value', 'key')->map(function ($path) {
+
+        $fullPath = storage_path('app/public/' . $path);
+
+        $version = file_exists($fullPath)
+            ? filemtime($fullPath)
+            : time();
+
+        return asset(Storage::url($path)) . '?v=' . $version;
+    });
+
+    return response()->json($data);
+}
 }
