@@ -99,8 +99,16 @@ class User extends Authenticatable
 }
    protected static function booted()
 {
-    static::creating(function ($user) {
-        $user->numeric_id = (User::max('numeric_id') ?? 99999) + 1;
+     static::creating(function ($user) {
+        if (empty($user->numeric_id)) {
+            $startPoint = 600000;
+            $maxCurrentId = static::max('numeric_id');
+            if (!$maxCurrentId || $maxCurrentId < $startPoint) {
+                $user->numeric_id = $startPoint;
+            } else {
+                $user->numeric_id = $maxCurrentId + 1;
+            }
+        }
     });
 }
 // Migration: 2024_xx_xx_make_numeric_id_autoincrement.php

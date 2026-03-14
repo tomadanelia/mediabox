@@ -17,15 +17,22 @@ class AdminUserController extends Controller
         $validated = $request->validate([
             'email'     => 'required_without:phone|nullable|email|unique:users',
             'phone'     => 'required_without:email|nullable|string|unique:users',
+            'numeric_id'=> 'required|string|min:5',
             'password'  => 'required|string|min:8',
             'full_name' => 'nullable|string|max:255',
             'username'  => 'nullable|string|unique:users',
         ]);
-
-       $user = DB::transaction(function () use ($validated) {
+        $numericId = $validated['numeric_id'];
+        //for different database system in our company network users that has 5 digit id's
+        if(strlen($numericId)==5){
+        $numericId=$numericId."0";
+        }
+       
+       $user = DB::transaction(function () use ($validated,$numericId) {
         $user = User::create([
             'email'     => $validated['email'] ?? null,
             'phone'     => $validated['phone'] ?? null,
+            'numeric_id'=> (int) $numericId,
             'password'  => Hash::make($validated['password']),
             'full_name' => $validated['full_name'] ?? null,
             'username'  => $validated['username'] ?? null,
