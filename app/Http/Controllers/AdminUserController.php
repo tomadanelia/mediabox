@@ -70,9 +70,9 @@ class AdminUserController extends Controller
             }
 
             $account->update(['balance' => $newBalance]);
-
+            //have to modify this after securing
             \Illuminate\Support\Facades\Log::info("Admin Balance Adjustment", [
-                'admin_id'   => $request->user()->id,
+                'admin_id'   => "request->user()->id",
                 'user_id'    => $user->id,
                 'adjustment' => $request->amount,
                 'new_total'  => $newBalance,
@@ -121,27 +121,38 @@ $user = $userQuery->select(['id','numeric_id','username','email','phone','full_n
     }
 
     return response()->json([
-        'user' => [
-            'id' => $user->id,
-            'numeric_id' => $user->numeric_id,
-            'username' => $user->username,
-            'email' => $user->email,
-            'phone' => $user->phone,
-            'full_name' => $user->full_name,
-            'role' => $user->role,
-            'created_at' => $user->created_at,
-        ],
-        'account' => $user->account ? [
+    'user' => [
+        'id'         => $user->id,
+        'numeric_id' => $user->numeric_id,
+        'username'   => $user->username,
+        'email'      => $user->email,
+        'phone'      => $user->phone,
+        'full_name'  => $user->full_name,
+        'role'       => $user->role,
+        'created_at' => $user->created_at,
+    ],
+
+    'account' => $user->account ? [
         'balance' => $user->account->balance,
         'status'  => $user->account->status,
-         ] : null,
-        'active_plans' => $user->subscriptionPlans->map(function($plan) {
+    ] : null,
+
+    'active_plans' => $user->subscriptionPlans 
+        ? $user->subscriptionPlans->map(function($plan) {
+            $expiresAt = $plan->pivot->expires_at;
+            $daysLeft  = $expiresAt ? now()->diffInDays($expiresAt, false) : null;
             return [
-                'name' => $plan->name_en,
-                'expires_at' => $plan->pivot->expires_at,
-                'days_left' => now()->diffInDays($plan->pivot->expires_at, false)
+                'name'       => $plan->name_en,
+                'expires_at' => $expiresAt,
+                'days_left'  => $daysLeft !== null ? max(0, $daysLeft) : null,
             ];
         })
-    ]);
+        : [],
+    'meta' => [
+    'is_verified'  => (bool) $user->email_verified_at || (bool) $user->phone_verified_at,
+    'has_account'  => $user->account !== null,
+    'has_plans'    => $user->subscriptionPlans->isNotEmpty(),
+],
+]);
 }
 }
