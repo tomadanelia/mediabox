@@ -92,22 +92,24 @@ class AdminUserController extends Controller
         'q' => 'required|string|min:1'
     ]);
 
-    $query = $request->input('q');
+    $query = trim($request->input('q'));
+   $userQuery = User::query();
 
-   $user = User::where(function($q) use ($query) {
-    if (str_contains($query, '@')) {
-        $q->where('email', $query);
-    } else if (preg_match('/^\+?[\d\s\-]+$/', $query)) {
-        $digits = preg_replace('/[\s\-]/', '', ltrim($query, '+'));
-        if (strlen($digits) === 6) {
-            $q->where('numeric_id', (int) $digits);
-        } else {
-            $q->where('phone', $digits);
-        }
+if (str_contains($query, '@')) {
+    $userQuery->where('email', $query);
+} else if (preg_match('/^\+?[\d\s\-]+$/', $query)) {
+    $digits = preg_replace('/[\s\-]/', '', ltrim($query, '+'));
+
+    if (strlen($digits) === 6) {
+        $userQuery->where('numeric_id', (int) $digits);
     } else {
-        $q->where('username', $query);
+        $userQuery->where('phone', $digits);
     }
-})->select(['id','numeric_id','username','email','phone','full_name','role','created_at'])
+} else {
+    $userQuery->where('username', $query);
+}
+
+$user = $userQuery->select(['id','numeric_id','username','email','phone','full_name','role','created_at'])
                 ->with(['account', 'subscriptionPlans' => function($q) {
                     $q->wherePivot('expires_at', '>', now())
                       ->wherePivot('is_active', true);
