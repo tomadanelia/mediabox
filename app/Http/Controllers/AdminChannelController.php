@@ -4,6 +4,7 @@ use App\Models\Channel;
 use Illuminate\Http\JsonResponse; 
 use Illuminate\Support\Facades\Cache;
 use App\Http\Requests\AdminChannelUpdateRequest;
+use App\Services\SyncChannelsService;
 class AdminChannelController extends Controller{
     public function update(AdminChannelUpdateRequest $request, string $id): JsonResponse
     {
@@ -25,4 +26,13 @@ class AdminChannelController extends Controller{
             ]
         ]);
     }
+    public function sync(SyncChannelsService $syncService): JsonResponse
+{
+    $count = $syncService->syncChannels();
+
+    return response()->json([
+        'message' => "Successfully synced {$count} channels from legacy API.",
+        'count' => $count
+    ]);
+}
 }

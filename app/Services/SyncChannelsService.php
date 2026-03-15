@@ -1,26 +1,21 @@
 <?php
 
-namespace App\Console\Commands;
+namespace App\Services;
 
-use Illuminate\Console\Command;
-use App\Services\SyncingService;
 use App\Models\Channel;
 use App\Models\ChannelCategory;
 use App\Models\SubscriptionPlan;
-class SyncChannelsCommand extends Command
+use App\Services\SyncingService;
+class SyncChannelsService
 {
-    protected $signature = 'app:sync-channels';
-    protected $description = 'Sync channels from Legacy API to my DB';
+    public function __construct(protected SyncingService $syncingService) {}
 
-    public function handle(SyncingService $service)
+    public function syncChannels(): int
     {
-        $this->info('Fetching channels from MediaBox222...');
-        
-        $channels = $service->fetchChannelList();
+        $channels = $this->syncingService->fetchChannelList();
         
         if (empty($channels)) {
-            $this->error('No channels received.');
-            return;
+            return 0;
         }
 
         $category = ChannelCategory::firstOrCreate(
@@ -31,7 +26,7 @@ class SyncChannelsCommand extends Command
                 'description_ka' => 'სტანდარტული არხები'
             ]
         );
-
+        $defaultPlan = SubscriptionPlan::where('name_en', 'Standard Package')->first();
         $count = 0;
         foreach ($channels as $remote) {
             $channel = Channel::firstOrCreate(
@@ -46,15 +41,15 @@ class SyncChannelsCommand extends Command
                     'is_free' => $remote['FREE'] == "1",
                 ]
             );
-         if ($channel->is_free === false) {
-        $defaultPlan = SubscriptionPlan::where('name_en', 'Standard Package')->first();
-        if ($defaultPlan) {
-            $channel->plans()->syncWithoutDetaching([$defaultPlan->id]);
-        }
-       }
-        $count++;
-     }
 
-        $this->info("Synced {$count} channels successfully.");
+            if ($channel->wasRecentlyCreated && $channel->is_free === false) {
+                if ($defaultPlan) {
+                    $channel->plans()->syncWithoutDetaching([$defaultPlan->id]);
+                }
+            }
+            $count++;
+        }
+
+        return $count;
     }
 }

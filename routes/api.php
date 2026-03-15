@@ -79,6 +79,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 Route::prefix('admin')->group(function () {
     Route::get('/users/search', [AdminUserController::class, 'search']);
+    Route::post('/channels/sync', [AdminChannelController::class, 'sync']);
     Route::post('/users', [AdminUserController::class, 'store']);
     Route::post('/users/adjust-balance', [AdminUserController::class, 'adjustBalance']);
     Route::post('/logos', [SettingController::class, 'updateLogos']);
