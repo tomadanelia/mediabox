@@ -150,6 +150,7 @@ $user = $userQuery->select(['id','numeric_id','username','email','phone','full_n
             $daysLeft  = $expiresAt ? now()->diffInDays($expiresAt, false) : null;
             return [
                 'name'       => $plan->name_en,
+                'id'         => $plan->id,
                 'expires_at' => $expiresAt,
                 'days_left'  => $daysLeft !== null ? max(0, $daysLeft) : null,
             ];
