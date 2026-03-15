@@ -6,7 +6,7 @@ use Illuminate\Console\Command;
 use App\Services\SyncingService;
 use App\Models\Channel;
 use App\Models\ChannelCategory;
-
+use App\Models\SubscriptionPlan;
 class SyncChannelsCommand extends Command
 {
     protected $signature = 'app:sync-channels';
