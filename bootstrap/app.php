@@ -17,16 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi();     
         $middleware->alias([
             'whitelist.ip' => IpWhiteList::class,
+            'admin'        => \App\Http\Middleware\AdminMiddleware::class,
         ]);
         $middleware->trustProxies(at: '*'); 
-        $middleware->validateCsrfTokens(except: [
-            'api/admin/categories',    
-            'api/admin/categories/*',
-            'api/admin/plans',
-            'api/admin/plans/*',
-            'api/broadcasting/auth',
-        ]);
-    })
-    ->withExceptions(function (Exceptions $exceptions): void {
-        //
-    })->create();
+    });

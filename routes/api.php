@@ -77,7 +77,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/tv/remote/ready', [RemoteController::class, 'tvReady']);
     Broadcast::routes(['middleware' => ['auth:sanctum']]);
 });
-Route::prefix('admin')->group(function () {
+Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/users/search', [AdminUserController::class, 'search']);
     Route::post('/channels/sync', [AdminChannelController::class, 'sync']);
     Route::post('/users', [AdminUserController::class, 'store']);
@@ -97,7 +97,6 @@ Route::prefix('admin')->group(function () {
         Route::put('/{categoryId}', [AdminCategoryController::class, 'editCategory']);
         Route::delete('/{categoryId}', [AdminCategoryController::class, 'removeCategory']);
     });
-
     Route::prefix('plans')->group(function () {
         Route::post('/', [AdminPlansController::class, 'addPlan']);
         Route::put('/{planId}', [AdminPlansController::class, 'editPlan']);
@@ -108,7 +107,6 @@ Route::prefix('admin')->group(function () {
         Route::delete('/{planId}/channels', [AdminPlansController::class, 'removeChannelsFromPlan']);
         Route::get('/all', [AdminPlansController::class, 'allPlans']);
     });
-
 });
 Route::post('/tv/init', [TvPairingController::class, 'initialize']);
 Route::post('/tv/claim', [TvPairingController::class, 'claim'])
