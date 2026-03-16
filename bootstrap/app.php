@@ -21,4 +21,4 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin'        => AdminMiddleware::class,
         ]);
         $middleware->trustProxies(at: '*'); 
-    });
+    })->create();
