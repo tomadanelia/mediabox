@@ -8,7 +8,6 @@ use Illuminate\Support\Str;
 use App\Models\UserDevice;
 use App\Services\SocketTokenService;
 use Illuminate\Support\Facades\Redis;
-
 class TvPairingController extends Controller
 {
     public function initialize(Request $request, SocketTokenService $socketService)
@@ -37,16 +36,22 @@ class TvPairingController extends Controller
 public function pair(Request $request)
 {
     $request->validate(['pairing_code' => 'required|string']);
+    \Log::info("Pairing started for code: " . $request->pairing_code);
 
     $pairing = TvPairing::where('pairing_code', $request->pairing_code)
         ->where('expires_at', '>', now())
         ->firstOrFail();
-
+    if (!$pairing) {
+        \Log::error("Pairing code not found or expired");
+        return response()->json(['message' => 'Invalid code'], 404);
+    }
     $claimToken = Str::random(64);
     $pairing->update([
         'user_id' => $request->user()->id,
         'claim_token' => hash('sha256', $claimToken)
     ]);
+    \Log::info("Publishing to Redis...");
+
     Redis::publish('pairing_events', json_encode([
         'pairing_code' => $request->pairing_code,
         'status' => 'ready_to_claim',
