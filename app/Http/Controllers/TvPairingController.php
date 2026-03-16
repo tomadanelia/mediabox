@@ -81,7 +81,7 @@ public function claim(Request $request)
     );
 
     $token = $user->createToken('tv_apk')->plainTextToken;
-    $pairing->delete(); 
+    $pairing->delete(); //
 
     return response()->json([
         'access_token' => $token,
