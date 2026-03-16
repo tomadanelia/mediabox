@@ -26,9 +26,13 @@ class CheckBalanceService
             }
             
             $response = [
-                'message' => 'Success',
-                'customer_id' => $account->id,
-                'balance' => $account->balance,
+                 'success' => true,
+                 'first_name' => $account->user->full_name ?? 'Customer',
+                 'last_name' => $account->user->username ?? '',
+                 'full_name' => $account->user->full_name ?? '',
+                 'user_name' => $account->user->username ?? '',
+                 'debt' => $account->balance * -100, 
+                 'customerID' => $account->user->numeric_id
             ];
             
             $this->updateCallbackLog($logId, $response, 200);
