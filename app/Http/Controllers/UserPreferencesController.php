@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Channel;
 use Symfony\Component\HttpFoundation\JsonResponse;
-
+use Illuminate\Support\Facades\Cache;
 class UserPreferencesController
 {
     public function getFavouriteChannels(Request $request):JsonResponse
     {
-        $favouriteChannelIds=$request->user()->favouriteChannels()->pluck('external_id');
+        $favouriteChannelIds = Cache::remember("user_favs_{$userId}", 3600, function() use ($request) {
+        return $request->user()->favouriteChannels()->pluck('external_id');
+    });
         return response()->json([
             'favouriteChannelIds'=>$favouriteChannelIds
         ]);
@@ -20,6 +22,7 @@ class UserPreferencesController
     {
         $channel = Channel::where('external_id', $request->channelId)->firstOrFail();
         $request->user()->favouriteChannels()->syncWithoutDetaching([$channel->id]);
+        Cache::forget("user_favs_{$request->user()->id}");
         return response()->json([
             'message'=>'Channel added to favourites successfully'
         ]);
@@ -28,6 +31,7 @@ class UserPreferencesController
     {
         $channel = Channel::where('external_id',$channelId)->firstOrFail();
         $request->user()->favouriteChannels()->detach($channel->id);
+        Cache::forget("user_favs_{$request->user()->id}");
         return response()->json([
             'message'=>'Channel removed from favourites successfully'
         ]);
