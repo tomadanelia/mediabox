@@ -111,6 +111,34 @@ class User extends Authenticatable
         }
     });
 }
+
+public function getTotalTvLimit(): int
+{
+    $limit = $this->subscriptionPlans()
+        ->wherePivot('is_active', true)
+        ->wherePivot('expires_at', '>', now())
+        ->sum('device_limit');
+
+    return $limit > 0 ? $limit : 1; 
+}
+public function enforceDeviceLimit(): void
+{
+    $limit = $this->getTotalTvLimit();
+
+    $count = $this->tokens()->where('name', 'tv_apk')->count();
+
+    if ($count >= $limit) {
+        $toDelete = ($count - $limit) + 1;
+
+        $ids = $this->tokens()
+            ->where('name', 'tv_apk')
+            ->orderBy('created_at', 'asc')
+            ->limit($toDelete)
+            ->pluck('id');
+
+        $this->tokens()->whereIn('id', $ids)->delete();
+    }
+}
 // Migration: 2024_xx_xx_make_numeric_id_autoincrement.php
 
 //public function up(): void
