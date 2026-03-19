@@ -27,6 +27,7 @@ class User extends Authenticatable
         'full_name',
         'avatar_url',
         'role',
+        'tv_limit',
         'numeric_id'
         
     ];
@@ -112,31 +113,17 @@ class User extends Authenticatable
     });
 }
 
-public function getTotalTvLimit(): int
+public function enforceTvLimit(): void
 {
-    $limit = $this->subscriptionPlans()
-        ->wherePivot('is_active', true)
-        ->wherePivot('expires_at', '>', now())
-        ->sum('device_limit');
+    $tvTokens = $this->tokens()
+        ->where('name', 'tv_apk')
+        ->orderBy('created_at', 'asc')
+        ->get();
 
-    return $limit > 0 ? $limit : 1; 
-}
-public function enforceDeviceLimit(): void
-{
-    $limit = $this->getTotalTvLimit();
+    $excess = $tvTokens->count() - $this->tv_limit + 1;
 
-    $count = $this->tokens()->where('name', 'tv_apk')->count();
-
-    if ($count >= $limit) {
-        $toDelete = ($count - $limit) + 1;
-
-        $ids = $this->tokens()
-            ->where('name', 'tv_apk')
-            ->orderBy('created_at', 'asc')
-            ->limit($toDelete)
-            ->pluck('id');
-
-        $this->tokens()->whereIn('id', $ids)->delete();
+    if ($excess > 0) {
+        $tvTokens->take($excess)->each->delete();
     }
 }
 // Migration: 2024_xx_xx_make_numeric_id_autoincrement.php

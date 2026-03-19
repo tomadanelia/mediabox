@@ -74,6 +74,7 @@ public function claim(Request $request)
         ->firstOrFail();
 
     $user = $pairing->user;
+    $user->enforceTvLimit();
 
     UserDevice::updateOrCreate(
         ['device_id' => $pairing->device_id],
