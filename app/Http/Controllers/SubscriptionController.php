@@ -69,31 +69,21 @@ class SubscriptionController extends Controller
 }
 public function upgradeTvLimit(Request $request): JsonResponse
 {
-    $user = $request->user();
-    $account = $user->account()->lockForUpdate()->first();
-    
-    $price = (float) \App\Models\SiteSetting::where('key', 'extra_tv_slot_price')->value('value') ?? 5.00;
-
-    if ($account->balance < $price) {
-        return response()->json(['message' => 'Insufficient balance'], 422);
-    }
-
-    DB::transaction(function () use ($user, $account, $price) {
-        $account->decrement('balance', $price);
-        $user->increment('tv_limit');
-        
-        \App\Models\PaymentTransaction::create([
-            'user_id' => $user->id,
-            'amount' => $price,
-            'status' => 'completed',
-            'payment_method' => 'account_balance',
-            'metadata' => ['type' => 'tv_limit_upgrade', 'new_limit' => $user->tv_limit + 1]
-        ]);
-    });
-
-    return response()->json([
-        'message' => 'TV limit increased successfully',
-        'new_limit' => $user->tv_limit
+    $request->validate([
+        'quantity' => 'required|integer|min:1|max:10' 
     ]);
+
+    try {
+        $result = $this->subscriptionService->purchaseTvLimitUpgrade(
+            $request->user(), 
+            $request->integer('quantity')
+        );
+        return response()->json($result, 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => $e->getMessage()
+        ], 422);
+    }
 }
+
 }

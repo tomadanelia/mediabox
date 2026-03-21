@@ -66,7 +66,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
     Route::post('/plans/purchase', [SubscriptionController::class, 'purchase']);
     Route::get('/plans/my', [SubscriptionController::class, 'myPlans']);
-    Route::get('/channels/heartbeat', [ChannelController::class, 'heartbeat']);
+    Route::post('/plans/tv-limit',[SubscriptionController::class,'upgradeTvLimit']);
     Route::get('/user/preferences/favourite-channels', [UserPreferencesController::class, 'getFavouriteChannels']);
     Route::post('/user/preferences/favourite-channels', [UserPreferencesController::class, 'addFavouriteChannel']);
     Route::delete('/user/preferences/favourites/{channelId}', [UserPreferencesController::class, 'removeFavouriteChannel']);
@@ -83,6 +83,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::post('/users', [AdminUserController::class, 'store']);
     Route::post('/users/adjust-balance', [AdminUserController::class, 'adjustBalance']);
     Route::post('/logos', [SettingController::class, 'updateLogos']);
+    Route::post('/settings/tv-price', [SettingController::class, 'updateTvPrice']);
     Route::put('/channels/{id}', [AdminChannelController::class, 'update']);
     Route::get('/users', [AdminCategoryController::class, 'users']);
     Route::prefix('users/{userId}')->group(function () {
@@ -115,6 +116,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/tv/pair', [TvPairingController::class, 'pair']);
 });
 Route::get('/settings/logos', [SettingController::class, 'getLogos']);
+Route::get('/settings/tv-price', [SettingController::class, 'getTvPrice']);
 Route::prefix('radio')->group(function () {
     Route::get('/', [RadioController::class, 'index']);
     Route::get('/{id}/stream', [RadioController::class, 'getStreamUrl']);
