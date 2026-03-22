@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\SubscriptionPlan;
+use App\Models\SiteSetting;
 use App\Models\PaymentTransaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -86,7 +87,7 @@ class SubscriptionService
             throw ValidationException::withMessages(['account' => 'User account not found.']);
         }
 
-        $pricePerSlot = (float) \App\Models\SiteSetting::where('key', 'extra_tv_price')->value('value') ?? 5.00;
+        $pricePerSlot = (float) SiteSetting::where('key', 'extra_tv_price')->value('value') ?? 5.00;
         
         $totalPrice = $pricePerSlot * $quantity;
 
