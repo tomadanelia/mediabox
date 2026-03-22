@@ -67,4 +67,23 @@ class SubscriptionController extends Controller
         'channels' => $channels
     ], 200);
 }
+public function upgradeTvLimit(Request $request): JsonResponse
+{
+    $request->validate([
+        'quantity' => 'required|integer|min:1|max:10' 
+    ]);
+
+    try {
+        $result = $this->subscriptionService->purchaseTvLimitUpgrade(
+            $request->user(), 
+            $request->integer('quantity')
+        );
+        return response()->json($result, 200);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => $e->getMessage()
+        ], 422);
+    }
+}
+
 }

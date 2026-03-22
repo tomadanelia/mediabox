@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\SubscriptionPlan;
+use App\Models\SiteSetting;
 use App\Models\PaymentTransaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -77,4 +78,52 @@ class SubscriptionService
             ];
         });
     }
+    public function purchaseTvLimitUpgrade(User $user, int $quantity = 1): array
+{
+    return DB::transaction(function () use ($user, $quantity) {
+        $account = $user->account()->lockForUpdate()->first();
+        
+        if (!$account) {
+            throw ValidationException::withMessages(['account' => 'User account not found.']);
+        }
+
+        $pricePerSlot = (float) SiteSetting::where('key', 'extra_tv_price')->value('value') ?? 5.00;
+        
+        $totalPrice = $pricePerSlot * $quantity;
+
+        if ($account->balance < $totalPrice) {
+            throw ValidationException::withMessages([
+                'balance' => "Insufficient balance. Need {$totalPrice} GEL for {$quantity} slots."
+            ]);
+        }
+
+        $account->balance -= $totalPrice;
+        $account->save();
+
+        $transaction = PaymentTransaction::create([
+            'user_id' => $user->id,
+            'plan_id' => null, 
+            'amount' => $totalPrice,
+            'currency' => 'GEL',
+            'status' => 'completed',
+            'payment_method' => 'account_balance',
+            'metadata' => json_encode([
+                'type' => 'tv_limit_increase',
+                'quantity' => $quantity,
+                'price_per_unit' => $pricePerSlot,
+                'old_limit' => $user->tv_limit,
+                'new_limit' => $user->tv_limit + $quantity
+            ])
+        ]);
+
+        $user->increment('tv_limit', $quantity);
+
+        return [
+            'message' => "Successfully added {$quantity} TV slots",
+            'added_slots' => $quantity,
+            'new_total_limit' => $user->tv_limit,
+            'remaining_balance' => $account->balance
+        ];
+    });
+}
 }

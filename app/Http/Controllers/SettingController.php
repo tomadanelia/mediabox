@@ -44,7 +44,30 @@ class SettingController extends Controller
             'urls' => $results
         ]);
     }
+    public function updateExtraTvPrice(Request $request):jsonResponse
+    {
+          $request->validate([
+            'price' => 'required|numeric|min:0',
+        ]);
 
+        $setting = SiteSetting::updateOrCreate(
+            ['key' => 'extra_tv_price'],
+            ['value' => (string) $request->price]
+        );
+
+        return response()->json([
+            'message' => 'Extra TV fee updated successfully',
+            'price' => $setting->value
+        ]);
+    }
+    public function getTvPrice(): JsonResponse
+    {
+        $price = SiteSetting::where('key', 'extra_tv_price')->value('value') ?? '5.00';
+        
+        return response()->json([
+            'extra_tv_price' => (float) $price
+        ]);
+    }
     public function getLogos(): JsonResponse
 {
     $settings = SiteSetting::whereIn('key', ['logo_light', 'logo_dark'])->get();

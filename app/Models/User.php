@@ -27,6 +27,7 @@ class User extends Authenticatable
         'full_name',
         'avatar_url',
         'role',
+        'tv_limit',
         'numeric_id'
         
     ];
@@ -110,6 +111,20 @@ class User extends Authenticatable
             }
         }
     });
+}
+
+public function enforceTvLimit(): void
+{
+    $tvTokens = $this->tokens()
+        ->where('name', 'tv_apk')
+        ->orderBy('created_at', 'asc')
+        ->get();
+
+    $excess = $tvTokens->count() - $this->tv_limit + 1;
+
+    if ($excess > 0) {
+        $tvTokens->take($excess)->each->delete();
+    }
 }
 // Migration: 2024_xx_xx_make_numeric_id_autoincrement.php
 
