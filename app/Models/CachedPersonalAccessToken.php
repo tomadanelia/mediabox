@@ -7,6 +7,7 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class CachedPersonalAccessToken extends PersonalAccessToken
 {
+    protected $table = 'personal_access_tokens';
     //ttl set to 15 minutes
     public static function findToken($token)
     {
@@ -16,4 +17,11 @@ class CachedPersonalAccessToken extends PersonalAccessToken
             parent::findToken($token)
         );
     }
+   protected static function booted()
+    {
+        static::deleted(function ($tokenModel) {
+            Cache::forget("sanctum:{$tokenModel->token}");
+        });
+    }
+
 }
