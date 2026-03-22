@@ -70,12 +70,17 @@ class SubscriptionService
             }
 
             return [
-                'message' => 'Subscription purchased successfully',
-                'plan_en' => $plan->name_en,
-                'plan_ka' => $plan->name_ka,
-                'expires_at' => $expiresAt,
-                'remaining_balance' => $account->balance
-            ];
+            'success' => true,
+            'invoice' => [
+                'transaction_id' => $transaction->id,
+                'date' => $transaction->created_at->toIso8601String(),
+                'item_name' => $plan->name_en,
+                'amount' => $transaction->amount,
+                'currency' => $transaction->currency
+            ],
+            'expires_at' => $expiresAt,
+            'remaining_balance' => $account->balance
+        ];
         });
     }
     public function purchaseTvLimitUpgrade(User $user, int $quantity = 1): array
@@ -118,10 +123,16 @@ class SubscriptionService
 
         $user->increment('tv_limit', $quantity);
 
-        return [
-            'message' => "Successfully added {$quantity} TV slots",
-            'added_slots' => $quantity,
-            'new_total_limit' => $user->tv_limit,
+         return [
+            'success' => true,
+            'invoice' => [
+                'transaction_id' => $transaction->id,
+                'date' => $transaction->created_at->toIso8601String(),
+                'item_name' => "TV Device Limit Upgrade (+{$quantity})",
+                'amount' => $transaction->amount,
+                'currency' => $transaction->currency,
+            ],
+            'new_limit' => $user->tv_limit,
             'remaining_balance' => $account->balance
         ];
     });
