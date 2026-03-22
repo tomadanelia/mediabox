@@ -6,10 +6,11 @@ use Illuminate\Http\Request;
 use App\Models\Channel;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Illuminate\Support\Facades\Cache;
-class UserPreferencesController
+class UserPreferencesController extends Controller
 {
     public function getFavouriteChannels(Request $request):JsonResponse
     {
+        $userId = $request->user()->id;
         $favouriteChannelIds = Cache::remember("user_favs_{$userId}", 3600, function() use ($request) {
         return $request->user()->favouriteChannels()->pluck('external_id');
     });
