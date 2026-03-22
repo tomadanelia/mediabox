@@ -6,6 +6,7 @@ use App\Http\Requests\Auth\UpdateProfileRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\Company;
 
 class ProfileController extends Controller
 {
