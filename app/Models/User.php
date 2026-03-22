@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\UserSubscription;
 use App\Models\Channel;
 use App\Models\UserDevice;
+use App\Models\company;
 
 
 class User extends Authenticatable
@@ -80,6 +81,10 @@ class User extends Authenticatable
         'auto_renew'
     ])
     ->withTimestamps();
+}
+public function company()
+{
+    return $this->belongsTo(Company::class);
 }
       public function favouriteChannels(){
     return $this->belongsToMany(

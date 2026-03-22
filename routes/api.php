@@ -61,6 +61,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/web/logout', [SpaAuthController::class, 'logout']);
     Route::get('/user', [ProfileController::class, 'show']);
     Route::put('/user/profile', [ProfileController::class, 'update']);
+    Route::post('/user/business-registration', [ProfileController::class, 'registerBusiness']);
     Route::get('/user', function (Request $request) {
         return $request->user()->load('account');
     });

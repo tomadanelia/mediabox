@@ -23,4 +23,38 @@ class ProfileController extends Controller
     {
         return response()->json($request->user()->load('account'));
     }
+    public function registerBusiness(Request $request): JsonResponse
+{
+    $request->validate([
+        'company_name' => 'required|string|max:255',
+        'tax_id'       => 'required|string|max:50|unique:companies,tax_id',
+        'purpose'      => 'required|string|max:1000',
+    ]);
+
+    $user = $request->user();
+
+    if ($user->company_id) {
+        return response()->json(['message' => 'User is already associated with a company.'], 422);
+    }
+
+    $company = DB::transaction(function () use ($request, $user) {
+        $company = Company::create([
+            'name'    => $request->company_name,
+            'tax_id'  => $request->tax_id,
+            'purpose' => $request->purpose,
+        ]);
+
+        $user->update([
+            'company_id' => $company->id,
+            'role' => 'businessman'
+        ]);
+
+        return $company;
+    });
+
+    return response()->json([
+        'message' => 'Business registration successful',
+        'company' => $company
+    ]);
+}
 }
