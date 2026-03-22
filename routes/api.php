@@ -55,7 +55,6 @@ Route::get('/interpay/balance', [InterPayController::class, 'handle']);
 Route::post('/interpay/balance', [InterPayController::class, 'handle']);  
 Route::get('/plans', [SubscriptionController::class, 'index']);
 Route::get('/plans/{planId}/channels', [SubscriptionController::class, 'getChannelsForPlan']);
-Route::get('/internal/stream-auth', [ChannelController::class, 'streamAuth'])->middleware('whitelist.ip');
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::post('/auth/web/logout', [SpaAuthController::class, 'logout']);
@@ -84,7 +83,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::post('/users', [AdminUserController::class, 'store']);
     Route::post('/users/adjust-balance', [AdminUserController::class, 'adjustBalance']);
     Route::post('/logos', [SettingController::class, 'updateLogos']);
-    Route::post('/settings/tv-price', [SettingController::class, 'updateTvPrice']);
+    Route::post('/settings/tv-price', [SettingController::class, 'updateExtraTvPrice']);
     Route::put('/channels/{id}', [AdminChannelController::class, 'update']);
     Route::get('/users', [AdminCategoryController::class, 'users']);
     Route::prefix('users/{userId}')->group(function () {
