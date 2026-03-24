@@ -81,8 +81,11 @@ public function claim(Request $request)
         ['user_id' => $user->id, 'device_name' => 'Android TV']
     );
 
-    $token = $user->createToken('tv_apk')->plainTextToken;
-    $pairing->delete(); //
+    $newToken = $user->createToken('tv_apk');
+    $newToken->accessToken->device_id = $pairing->device_id;
+    $newToken->accessToken->save();
+    $token = $newToken->plainTextToken;
+    $pairing->delete(); 
 
     return response()->json([
         'access_token' => $token,

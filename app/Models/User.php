@@ -14,6 +14,7 @@ use App\Models\UserSubscription;
 use App\Models\Channel;
 use App\Models\UserDevice;
 use App\Models\company;
+use Illuminate\Support\Facades\DB;
 
 
 class User extends Authenticatable
@@ -130,6 +131,19 @@ public function enforceTvLimit(): void
     if ($excess > 0) {
         $tvTokens->take($excess)->each->delete();
     }
+}
+public function getActiveTvDevices()
+{
+
+    return DB::table('personal_access_tokens')
+        ->join('user_devices', 'personal_access_tokens.device_id', '=', 'user_devices.device_id')
+        ->where('personal_access_tokens.tokenable_id', $this->id)
+        ->where('personal_access_tokens.name', 'tv_apk')
+        ->select([
+            'user_devices.device_name',
+            'user_devices.device_id',
+        ])
+        ->get();
 }
 // Migration: 2024_xx_xx_make_numeric_id_autoincrement.php
 

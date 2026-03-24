@@ -8,7 +8,7 @@ use App\Services\SubscriptionService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-
+use App\Models\CachedPersonalAccessToken;
 class SubscriptionController extends Controller
 {
     public function __construct(
@@ -85,5 +85,40 @@ public function upgradeTvLimit(Request $request): JsonResponse
         ], 422);
     }
 }
+   public function getTvDevices(Request $request): JsonResponse
+{
+    $user = $request->user();
 
+    $activeTvs = $user->getActiveTvDevices();
+
+    return response()->json([
+        'tv_limit' => $user->tv_limit,
+        'active_count' => $activeTvs->count(),
+        'slots_remaining' => max(0, $user->tv_limit - $activeTvs->count()),
+        'devices' => $activeTvs
+    ]);
+}
+   public function logoutTvDevice(Request $request): JsonResponse
+{
+    $request->validate([
+        'device_id' => 'required|string|exists:user_devices,device_id',
+    ]);
+
+    $user = $request->user();
+    $token = $user->tokens()
+        ->where('name', 'tv_apk')
+        ->where('device_id', $request->device_id)
+        ->first();
+
+    if (!$token) {
+        return response()->json(['message' => 'No active session found for this device'], 404);
+    }
+    $token->delete();
+    $remaining_slots=$user->tv_limit - $user->tokens()->where('name', 'tv_apk')->count();
+    return response()->json([
+        'message' => 'TV device logged out successfully',
+        'device_id' => $request->device_id,
+        'remaining_slots' => $remaining_slots
+    ]);
+}  
 }
