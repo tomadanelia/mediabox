@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Company;
+use App\Models\UserDevice;
 
 class ProfileController extends Controller
 {
@@ -59,4 +60,33 @@ class ProfileController extends Controller
         'company' => $company
     ]);
 }
+    public function giveTvDeviceName(Request $request):JsonResponse
+    {
+        $request->validate([
+        'device_id' => 'required|string|exists:user_devices,device_id',
+        'name'=>'required|string'
+        ]);
+        try {
+        $affected = UserDevice::where('device_id', $request->device_id)
+        ->update(['name' => $request->name]);
+
+       if ($affected === 0) {
+        return response()->json([
+            'success' => false,
+            'message' => 'No device updated'
+        ], 404);
+       }
+
+         return response()->json([
+        'success' => true,
+        'name' => $request->name
+       ]);
+        } catch (\Exception $e) {
+         return response()->json([
+        'success' => false,
+        'message' => 'Database error: ' . $e->getMessage()
+    ], 500);
+}
+        
+    }
 }
