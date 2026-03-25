@@ -64,11 +64,11 @@ class ProfileController extends Controller
     {
         $request->validate([
         'device_id' => 'required|string|exists:user_devices,device_id',
-        'name'=>'required|string'
+        'device_name'=>'required|string'
         ]);
         try {
         $affected = UserDevice::where('device_id', $request->device_id)
-        ->update(['name' => $request->name]);
+        ->update(['device_name' => $request->device_name]);
 
        if ($affected === 0) {
         return response()->json([
@@ -79,7 +79,7 @@ class ProfileController extends Controller
 
          return response()->json([
         'success' => true,
-        'name' => $request->name
+        'name' => $request->device_name
        ]);
         } catch (\Exception $e) {
          return response()->json([
