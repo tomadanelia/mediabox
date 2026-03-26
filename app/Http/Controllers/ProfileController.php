@@ -89,4 +89,19 @@ class ProfileController extends Controller
 }
         
     }
+    public function getTvDeviceName(string $deviceId, Request $request): JsonResponse
+{
+    $device = $request->user()->devices()
+        ->where('device_id', $deviceId)
+        ->first();
+
+    if (!$device) {
+        return response()->json(['message' => 'Device not found'], 404);
+    }
+
+    return response()->json([
+        'device_id' => $device->device_id,
+        'device_name' => $device->device_name,
+    ]);
+}
 }

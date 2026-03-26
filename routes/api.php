@@ -70,6 +70,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/tv/logged-in/devices',[SubscriptionController::class,'getTvDevices']);
     Route::post('/tv/free/device-slots', [SubscriptionController::class, 'logoutTvDevice']);
     Route::post('/tv/device-name',[ProfileController::class,'giveTvDeviceName']);
+    Route::get('/tv/device/{device_id}', [ProfileController::class, 'getTvDeviceName']);
     Route::get('/user/preferences/favourite-channels', [UserPreferencesController::class, 'getFavouriteChannels']);
     Route::post('/user/preferences/favourite-channels', [UserPreferencesController::class, 'addFavouriteChannel']);
     Route::delete('/user/preferences/favourites/{channelId}', [UserPreferencesController::class, 'removeFavouriteChannel']);
