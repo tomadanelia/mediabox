@@ -224,12 +224,7 @@ public function resetPassword(Request $request): JsonResponse
 
     public function logout(Request $request): JsonResponse
     {
-        if ($request->user() && $request->user()->currentAccessToken()) {
-            $token = $request->bearerToken();
-            $hashed = hash('sha256', $token);
-            Cache::forget("sanctum:{$hashed}");
-            $request->user()->currentAccessToken()->delete(); 
-        }
-        return response()->json(['message' => 'Logged out']);
+    $request->user()?->currentAccessToken()?->delete();
+    return response()->json(['message' => 'Logged out']);
     }
 }

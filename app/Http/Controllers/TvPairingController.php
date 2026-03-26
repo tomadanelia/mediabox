@@ -74,6 +74,11 @@ public function claim(Request $request)
         ->firstOrFail();
 
     $user = $pairing->user;
+    $user->tokens()
+    ->where('name', 'tv_apk')
+    ->where('device_id', $request->device_id)
+    ->get()
+    ->each->delete();
     $user->enforceTvLimit();
 
     UserDevice::updateOrCreate(
