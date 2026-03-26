@@ -8,20 +8,23 @@ use Laravel\Sanctum\PersonalAccessToken;
 class CachedPersonalAccessToken extends PersonalAccessToken
 {
     protected $table = 'personal_access_tokens';
-    //ttl set to 15 minutes
+
     public static function findToken($token)
     {
-        $hashed = hash('sha256', $token);
+        $actualToken = str_contains($token, '|') 
+            ? explode('|', $token, 2)[1] 
+            : $token;
+            
+        $hashed = hash('sha256', $actualToken);
 
-        return Cache::remember("sanctum:{$hashed}", 900, fn() =>
-            parent::findToken($token)
-        );
-    }
-   protected static function booted()
-    {
-        static::deleted(function ($tokenModel) {
-            Cache::forget("sanctum:{$tokenModel->token}");
+        return Cache::remember("sanctum:{$hashed}", 900, function () use ($token) {
+            return parent::findToken($token);
         });
     }
 
+    public function delete()
+    {
+        Cache::forget("sanctum:{$this->token}");
+        return parent::delete();
+    }
 }
