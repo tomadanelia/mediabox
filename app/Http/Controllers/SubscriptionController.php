@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\CachedPersonalAccessToken;
+use App\Models\PaymentTransaction;
 class SubscriptionController extends Controller
 {
     public function __construct(
@@ -120,5 +121,32 @@ public function upgradeTvLimit(Request $request): JsonResponse
         'device_id' => $request->device_id,
         'remaining_slots' => $remaining_slots
     ]);
-}  
+}
+public function getTransactions(Request $request): JsonResponse
+{
+    $transactions = PaymentTransaction::where('user_id', $request->user()->id)
+        ->with('plan:id,name_ka,name_en') 
+        ->latest() 
+        ->paginate(15);
+
+    $transactions->getCollection()->transform(function ($item) {
+        $itemName = $item->plan 
+            ? $item->plan->name_en 
+            : ($item->metadata['item_name'] ?? 'Account Adjustment');
+
+        return [
+            'id' => $item->id,
+            'item_name' => $itemName,
+            'amount' => $item->amount,
+            'currency' => $item->currency,
+            'status' => $item->status,
+            'payment_method' => str_replace('_', ' ', $item->payment_method),
+            'date' => $item->created_at->format('Y-m-d H:i'),
+            'metadata' => $item->metadata 
+        ];
+    });
+
+    return response()->json($transactions);
+}
+
 }
