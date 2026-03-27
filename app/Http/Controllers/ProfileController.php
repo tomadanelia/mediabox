@@ -60,6 +60,29 @@ class ProfileController extends Controller
         'company' => $company
     ]);
 }
+    public function getCompanyDetail(Request $request): JsonResponse
+{
+    $user = $request->user();
+
+    if (!$user->company_id) {
+        return response()->json([
+            'has_company' => false,
+            'message' => 'User is not associated with a company.'
+        ], 404);
+    }
+
+    $user->loadMissing('company');
+
+    if (!$user->company) {
+        return response()->json(['message' => 'Company record not found.'], 404);
+    }
+
+    return response()->json([
+        'has_company' => true,
+        'company_name' => $user->company->name,
+        'tax_id'       => $user->company->tax_id,
+    ]);
+}
     public function giveTvDeviceName(Request $request):JsonResponse
     {
         $request->validate([
