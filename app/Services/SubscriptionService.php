@@ -47,7 +47,7 @@ class SubscriptionService
                 'currency' => 'GEL',
                 'status' => 'completed',
                 'payment_method' => 'account_balance',
-                'metadata' => json_encode(['previous_balance' => $account->balance + $price])
+                'metadata' => json_encode(['previous_balance' => $account->balance + $price,'remaining_balance' => $account->balance])
             ]);
 
             
@@ -135,7 +135,9 @@ class SubscriptionService
                 'quantity' => $quantity,
                 'price_per_unit' => $pricePerSlot,
                 'old_limit' => $user->tv_limit,
-                'new_limit' => $user->tv_limit + $quantity
+                'new_limit' => $user->tv_limit + $quantity,
+                'previous_balance' => $account->balance + $totalPrice, 
+                'remaining_balance' => $account->balance  
             ])
         ]);
 
