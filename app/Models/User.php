@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\UserSubscription;
 use App\Models\Channel;
 use App\Models\UserDevice;
-use App\Models\company;
+use App\Models\Company;
 use Illuminate\Support\Facades\DB;
 
 
@@ -30,7 +30,8 @@ class User extends Authenticatable
         'avatar_url',
         'role',
         'tv_limit',
-        'numeric_id'
+        'numeric_id',
+        'company_id',
         
     ];
 
@@ -45,6 +46,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'phone_verified_at' => 'datetime', 
             'password' => 'hashed',
+            'company_id' => 'integer',
         ];
     }
     public function getActivePlanIds(): ?array

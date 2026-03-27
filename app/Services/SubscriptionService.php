@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\SubscriptionPlan;
 use App\Models\SiteSetting;
+use App\Models\Company;
 use App\Models\PaymentTransaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -12,8 +13,16 @@ use \Illuminate\Support\Str;
 class SubscriptionService
 {
     public function purchasePlan(User $user, string $planId): array
-    {
-        return DB::transaction(function () use ($user, $planId) {
+    {   
+    $identifier = $user->full_name ?? (string)$user->numeric_id;
+    $field = $user->full_name ? 'full_name' : 'customer_id';
+
+    if ($user->company_id !== null) {
+        $user->loadMissing('company');
+        $identifier = $user->company->name ?? 'Unknown Company';
+        $field = 'company_name';
+    }
+        return DB::transaction(function () use ($user, $planId,$identifier,$field) {
             $account = $user->account()->lockForUpdate()->first();
             
             if (!$account) {
@@ -76,7 +85,8 @@ class SubscriptionService
                 'date' => $transaction->created_at->toIso8601String(),
                 'item_name' => $plan->name_en,
                 'amount' => $transaction->amount,
-                'currency' => $transaction->currency
+                'currency' => $transaction->currency,
+                $field=>$identifier
             ],
             'expires_at' => $expiresAt,
             'remaining_balance' => $account->balance
@@ -85,7 +95,15 @@ class SubscriptionService
     }
     public function purchaseTvLimitUpgrade(User $user, int $quantity = 1): array
 {
-    return DB::transaction(function () use ($user, $quantity) {
+    $identifier = $user->full_name ?? (string)$user->numeric_id;
+    $field = $user->full_name ? 'full_name' : 'customer_id';
+
+    if ($user->company_id !== null) {
+        $user->loadMissing('company');
+        $identifier = $user->company->name ?? 'Unknown Company';
+        $field = 'company_name';
+    }
+    return DB::transaction(function () use ($user, $quantity, $identifier, $field) {
         $account = $user->account()->lockForUpdate()->first();
         
         if (!$account) {
@@ -131,6 +149,7 @@ class SubscriptionService
                 'item_name' => "TV Device Limit Upgrade (+{$quantity})",
                 'amount' => $transaction->amount,
                 'currency' => $transaction->currency,
+                $field => $identifier
             ],
             'new_limit' => $user->tv_limit,
             'remaining_balance' => $account->balance
