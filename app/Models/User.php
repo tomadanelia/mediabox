@@ -85,11 +85,15 @@ class User extends Authenticatable
     ])
     ->withTimestamps();
 }
-public function company()
+    public function discounts()
+{
+    return $this->belongsToMany(Discount::class, 'discount_user');
+}
+    public function company()
 {
     return $this->belongsTo(Company::class);
 }
-      public function favouriteChannels(){
+    public function favouriteChannels(){
     return $this->belongsToMany(
         Channel::class,
         'user_favourites',
@@ -97,7 +101,7 @@ public function company()
         'channel_id',
     )
     ->withTimestamps();
-    }
+}
     public function watchHistories()
 {
     return $this->hasMany(UserWatchHistory::class);

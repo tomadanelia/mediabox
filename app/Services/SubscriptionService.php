@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\SubscriptionPlan;
 use App\Models\SiteSetting;
+use App\Models\Discount;
 use App\Models\Company;
 use App\Models\PaymentTransaction;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +31,7 @@ class SubscriptionService
             }
 
             $plan = SubscriptionPlan::findOrFail($planId);
-            $price = $plan->price;
+            $price = $this->getBestPrice($user, $plan->id, (float) $plan->price);
             if ($account->balance < $price) {
                 throw ValidationException::withMessages([
                     'balance' => 'Insufficient balance. Current balance: ' . $account->balance . ' GEL'
@@ -47,7 +48,7 @@ class SubscriptionService
                 'currency' => 'GEL',
                 'status' => 'completed',
                 'payment_method' => 'account_balance',
-                'metadata' => json_encode(['previous_balance' => $account->balance + $price,'remaining_balance' => $account->balance])
+                'metadata' => ['previous_balance' => $account->balance + $price,'remaining_balance' => $account->balance]
             ]);
 
             
@@ -110,10 +111,9 @@ class SubscriptionService
             throw ValidationException::withMessages(['account' => 'User account not found.']);
         }
 
-        $pricePerSlot = (float) SiteSetting::where('key', 'extra_tv_price')->value('value') ?? 5.00;
-        
+        $basePrice = (float) SiteSetting::where('key', 'extra_tv_price')->value('value') ?? 5.00;
+        $pricePerSlot = $this->getBestPrice($user, null, $basePrice);
         $totalPrice = $pricePerSlot * $quantity;
-
         if ($account->balance < $totalPrice) {
             throw ValidationException::withMessages([
                 'balance' => "Insufficient balance. Need {$totalPrice} GEL for {$quantity} slots."
@@ -130,7 +130,7 @@ class SubscriptionService
             'currency' => 'GEL',
             'status' => 'completed',
             'payment_method' => 'account_balance',
-            'metadata' => json_encode([
+            'metadata' => [
                 'type' => 'tv_limit_increase',
                 'quantity' => $quantity,
                 'price_per_unit' => $pricePerSlot,
@@ -138,7 +138,7 @@ class SubscriptionService
                 'new_limit' => $user->tv_limit + $quantity,
                 'previous_balance' => $account->balance + $totalPrice, 
                 'remaining_balance' => $account->balance  
-            ])
+            ],
         ]);
 
         $user->increment('tv_limit', $quantity);
@@ -157,5 +157,27 @@ class SubscriptionService
             'remaining_balance' => $account->balance
         ];
     });
+}
+     public function getBestPrice(User $user, ?string $planId, float $originalPrice): float
+{
+
+    $discount = Discount::where('is_active', true)
+        ->where('target_id', $planId) 
+        ->where(function ($query) use ($user) {
+            $query->where('is_global', true)
+                  ->orWhereHas('users', fn($q) => $q->where('users.id', $user->id));
+        })
+        ->where(function ($query) {
+            $query->whereNull('starts_at')->orWhere('starts_at', '<=', now());
+            $query->whereNull('expires_at')->orWhere('expires_at', '>=', now());
+        })
+        ->orderBy('value', 'asc') 
+        ->first();
+
+    if ($discount && $discount->value < $originalPrice) {
+        return (float) $discount->value;
+    }
+
+    return $originalPrice;
 }
 }
