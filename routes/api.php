@@ -17,6 +17,7 @@ use App\Http\Controllers\RadioController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminChannelController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\AdminDiscountController;
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/categories', [ChannelController::class, 'getCategories']);
@@ -113,6 +114,13 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::post('/{planId}/channels', [AdminPlansController::class, 'addChannelsToPlan']);
         Route::delete('/{planId}/channels', [AdminPlansController::class, 'removeChannelsFromPlan']);
         Route::get('/all', [AdminPlansController::class, 'allPlans']);
+    });
+     Route::prefix('discounts')->group(function () {
+        Route::get('/', [AdminDiscountController::class, 'index']);          
+        Route::post('/', [AdminDiscountController::class, 'store']);         
+        Route::put('/{id}', [AdminDiscountController::class, 'update']);     
+        Route::delete('/{id}', [AdminDiscountController::class, 'destroy']);  
+        Route::post('/{id}/assign', [AdminDiscountController::class, 'assignToUser']); 
     });
 });
 Route::post('/tv/init', [TvPairingController::class, 'initialize']);
