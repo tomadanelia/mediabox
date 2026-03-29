@@ -172,27 +172,34 @@ public function getArchiveUrl(string $externalId, int $startEpoch, string $clien
 }
 public function getDownloadUrl(string $externalId, int $startEpoch): ?string
 {
-    $serverIp = '159.89.20.100'; 
-
-    $response = Http::withoutVerifying()->post($this->baseUrl, [
+    $serverIp = '159.89.20.100';
+    
+    $response = Http::withoutVerifying()->withHeaders([
+        'Origin' => 'https://222.mediabox.ge',
+        'Referer' => 'https://222.mediabox.ge/',
+        'User-Agent' => 'PostmanRuntime/7.51.0',
+    ])->post($this->baseUrl, [
         'Method' => 'GetArchiveStream',
         'Pars' => [
             'CHANNEL_ID' => (int) $externalId,
-            'clientip'   => $serverIp
+            'clientip'   => $serverIp,
         ],
-        'urltype' => 'flussonic',
+        'urltype'  => 'flussonic',
         'clientip' => $serverIp,
     ]);
-
+    \Log::info('getDownloadUrl response', [
+    'status' => $response->status(),
+    'body'   => $response->body(),
+]);
     if ($response->successful()) {
         $data = $response->json();
         if (!empty($data['URL'])) {
-            $rawUrl = $data['URL'];
-            $parsed = parse_url($rawUrl);
+            $rawUrl    = $data['URL'];
+            $parsed    = parse_url($rawUrl);
             $pathParts = explode('/', $parsed['path']);
             array_pop($pathParts);
-            $basePath = implode('/', $pathParts);
-            
+            $basePath  = implode('/', $pathParts);
+
             return "{$parsed['scheme']}://{$parsed['host']}{$basePath}/video-timeshift_abs-{$startEpoch}.m3u8?{$parsed['query']}";
         }
     }
