@@ -29,7 +29,6 @@ Route::prefix('channels')->group(function () {
     Route::get('/{id}/archive', [ChannelController::class, 'archive']);
 });
 Route::prefix('auth')->group(function () {
-    Route::get('/channels/{id}/download', [DownloadController::class, 'downloadArchive']);
     Route::post('/login', [AuthController::class, 'login'])
         ->middleware('throttle:3,1');
 
@@ -85,6 +84,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user/devices', [RemoteController::class, 'getMyDevices']);
     Route::post('/tv/remote/ready', [RemoteController::class, 'tvReady']);
     Broadcast::routes(['middleware' => ['auth:sanctum']]);
+    Route::get('/channels/{id}/download', [DownloadController::class, 'downloadArchive']);
 });
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/users/search', [AdminUserController::class, 'search']);
