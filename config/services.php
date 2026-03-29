@@ -21,6 +21,12 @@ return [
     'resend' => [
         'key' => env('RESEND_API_KEY'),
     ],
+    'telecom1' => [
+    'account_id' => env('TELECOM1_ACCOUNT_ID'),
+    'key' => env('TELECOM1_API_KEY'),
+    'from' => env('TELECOM1_SENDER_NAME'),
+    'url' => env('TELECOM1_API_URL'),
+    ],
 
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
