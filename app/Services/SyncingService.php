@@ -170,5 +170,32 @@ public function getArchiveUrl(string $externalId, int $startEpoch, string $clien
         }
     });
 }
+public function getDownloadUrl(string $externalId, int $startEpoch): ?string
+{
+    $serverIp = '159.89.20.100'; 
 
+    $response = Http::withoutVerifying()->post($this->baseUrl, [
+        'Method' => 'GetArchiveStream',
+        'Pars' => [
+            'CHANNEL_ID' => (int) $externalId,
+            'clientip'   => $serverIp
+        ],
+        'urltype' => 'flussonic',
+        'clientip' => $serverIp,
+    ]);
+
+    if ($response->successful()) {
+        $data = $response->json();
+        if (!empty($data['URL'])) {
+            $rawUrl = $data['URL'];
+            $parsed = parse_url($rawUrl);
+            $pathParts = explode('/', $parsed['path']);
+            array_pop($pathParts);
+            $basePath = implode('/', $pathParts);
+            
+            return "{$parsed['scheme']}://{$parsed['host']}{$basePath}/video-timeshift_abs-{$startEpoch}.m3u8?{$parsed['query']}";
+        }
+    }
+    return null;
+}
 }

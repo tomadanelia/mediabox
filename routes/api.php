@@ -28,6 +28,7 @@ Route::prefix('channels')->group(function () {
     Route::get('/{id}/archive', [ChannelController::class, 'archive']);
 });
 Route::prefix('auth')->group(function () {
+    Route::get('/channels/{id}/download', [DownloadController::class, 'downloadArchive']);
     Route::post('/login', [AuthController::class, 'login'])
         ->middleware('throttle:3,1');
 
