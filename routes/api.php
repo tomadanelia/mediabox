@@ -18,6 +18,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminChannelController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AdminDiscountController;
+use App\Http\Controllers\DownloadController;
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/categories', [ChannelController::class, 'getCategories']);
