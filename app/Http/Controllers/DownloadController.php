@@ -19,20 +19,12 @@ class DownloadController extends Controller
 
     $channel = Channel::where('external_id', $id)->firstOrFail();
 
-    \Log::info('Download started', [
-        'channel_id' => $id,
-        'start'      => $request->start,
-        'duration'   => $request->duration,
-    ]);
-
     $m3u8Url = $this->syncService->getDownloadUrl($id, $request->start);
 
     if (!$m3u8Url) {
-        \Log::error('Download failed: could not get m3u8 URL', ['channel_id' => $id]);
         return response()->json(['message' => 'Source stream unavailable'], 404);
     }
 
-    \Log::info('m3u8 URL resolved', ['url' => $m3u8Url]);
 
     $duration = (int) $request->duration;
     $fileName = "archive_{$id}_{$request->start}.mp4";
@@ -42,12 +34,11 @@ class DownloadController extends Controller
         . " -protocol_whitelist file,http,https,tcp,tls,crypto"
         . " -i " . escapeshellarg($m3u8Url)
         . " -t {$duration}"
+        . " -map 0:2 -map 0:3"
         . " -c copy"
         . " -f mp4"
         . " " . escapeshellarg($tmpFile)
         . " -y 2>/tmp/ffmpeg_last.log";
-
-    \Log::info('Running ffmpeg', ['cmd' => $cmd]);
 
     exec($cmd, $output, $exitCode);
 
@@ -56,36 +47,18 @@ class DownloadController extends Controller
         : '(no log file)';
 
     if ($exitCode !== 0) {
-        \Log::error('ffmpeg exited with error', [
-            'exit_code' => $exitCode,
-            'ffmpeg_log' => $ffmpegLog,
-        ]);
         return response()->json(['message' => 'Encoding failed'], 500);
     }
 
     if (!file_exists($tmpFile)) {
-        \Log::error('ffmpeg succeeded but output file missing', [
-            'expected_path' => $tmpFile,
-            'ffmpeg_log'    => $ffmpegLog,
-        ]);
         return response()->json(['message' => 'Encoding failed'], 500);
     }
 
     $fileSize = filesize($tmpFile);
 
     if ($fileSize < 1000) {
-        \Log::error('ffmpeg output file too small', [
-            'size_bytes' => $fileSize,
-            'ffmpeg_log' => $ffmpegLog,
-        ]);
         return response()->json(['message' => 'Encoding failed'], 500);
     }
-
-    \Log::info('File written successfully', [
-        'path'       => $tmpFile,
-        'size_bytes' => $fileSize,
-        'size_mb'    => round($fileSize / 1048576, 2),
-    ]);
 
     return response()->download($tmpFile, $fileName, [
         'Content-Type'   => 'video/mp4',
