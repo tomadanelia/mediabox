@@ -9,6 +9,8 @@ use App\Services\VerificationService;
 use App\Models\Account;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Session;
 
 
 class SpaAuthController extends Controller
@@ -52,10 +54,15 @@ class SpaAuthController extends Controller
         }
 
         $this->verificationService->clearOtp($user->id);
+        $redisKey = "user_web_session:{$user->id}";
+        $oldSessionId = Redis::get($redisKey);
 
+        if ($oldSessionId) {
+        Redis::del(config('cache.prefix') . 'session:' . $oldSessionId);
+     }
         Auth::login($user, $remember); 
         $request->session()->regenerate();
-        
+        Redis::setex($redisKey, config('session.lifetime') * 60, Session::getId());
         return response()->json(['message' => 'Login successful', 'user' => $user]);
     }
 
