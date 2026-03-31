@@ -55,14 +55,16 @@ class SpaAuthController extends Controller
 
         $this->verificationService->clearOtp($user->id);
         $redisKey = "user_web_session:{$user->id}";
-        $oldSessionId = Redis::get($redisKey);
+$oldSessionId = Redis::get($redisKey);
 
-        if ($oldSessionId) {
-        Redis::del(config('cache.prefix') . 'session:' . $oldSessionId);
-     }
-        Auth::login($user, $remember); 
-        $request->session()->regenerate();
-        Redis::setex($redisKey, config('session.lifetime') * 60, Session::getId());
+if ($oldSessionId) {
+    Session::getHandler()->destroy($oldSessionId);
+}
+
+Auth::login($user, $remember);
+$request->session()->regenerate();
+
+Redis::setex($redisKey, config('session.lifetime') * 60, Session::getId());
         return response()->json(['message' => 'Login successful', 'user' => $user]);
     }
 
