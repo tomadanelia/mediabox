@@ -158,14 +158,16 @@ class SubscriptionService
         ];
     });
 }
-     public function getBestPrice(User $user, ?string $planId, float $originalPrice): float
+     public function getBestPrice(?User $user, ?string $planId, float $originalPrice): float
 {
 
     $discount = Discount::where('is_active', true)
         ->where('target_id', $planId) 
         ->where(function ($query) use ($user) {
-            $query->where('is_global', true)
-                  ->orWhereHas('users', fn($q) => $q->where('users.id', $user->id));
+            $query->where('is_global', true);
+                if ($user) {
+                  $query->orWhereHas('users', fn($q) => $q->where('users.id', $user->id));
+                }
         })
         ->where(function ($query) {
             $query->whereNull('starts_at')->orWhere('starts_at', '<=', now());

@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\CachedPersonalAccessToken;
 use App\Models\PaymentTransaction;
+use Illuminate\Support\Facades\Auth;
 class SubscriptionController extends Controller
 {
     public function __construct(
@@ -17,10 +18,30 @@ class SubscriptionController extends Controller
     ) {}
 
     public function index(): JsonResponse
-    {
-        $plans = SubscriptionPlan::where('is_active', true)->get();
-        return response()->json($plans);
-    }
+{
+    Auth::shouldUse('sanctum');
+    $user = request()->user();
+
+    $plans = SubscriptionPlan::where('is_active', true)->get();
+
+    $formattedPlans = $plans->map(function ($plan) use ($user) {
+        $originalPrice = (float) $plan->price;
+        $currentPrice = $this->subscriptionService->getBestPrice($user, $plan->id, $originalPrice);
+
+        return [
+            'id' => $plan->id,
+            'name_ka' => $plan->name_ka,
+            'name_en' => $plan->name_en,
+            'description_ka' => $plan->description_ka,
+            'description_en' => $plan->description_en,
+            'duration_days' => $plan->duration_days,
+            'price' => $originalPrice,
+            'discounted_price' => $currentPrice,
+        ];
+    });
+
+    return response()->json($formattedPlans);
+}
     public function myPlans(Request $request): JsonResponse
 {
     $plans = $request->user()->subscriptionPlans()
