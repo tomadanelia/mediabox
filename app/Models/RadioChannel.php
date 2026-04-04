@@ -10,7 +10,7 @@ class RadioChannel extends Model
 {
     use HasUuid;
 
-    protected $fillable = ['external_id', 'name', 'icon_url', 'is_active', 'is_free'];
+    protected $fillable = ['external_id', 'name', 'icon_url','stream_url', 'is_active', 'is_free'];
 
     public function plans()
     {

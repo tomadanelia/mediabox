@@ -19,6 +19,7 @@ use App\Http\Controllers\AdminChannelController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AdminDiscountController;
 use App\Http\Controllers\DownloadController;
+use App\Http\Controllers\AdminRadioController;
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/categories', [ChannelController::class, 'getCategories']);
@@ -124,6 +125,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::delete('/{id}', [AdminDiscountController::class, 'destroy']);  
         Route::post('/{id}/assign', [AdminDiscountController::class, 'assignToUser']); 
     });
+    Route::apiResource('radios', AdminRadioController::class);
 });
 Route::post('/tv/init', [TvPairingController::class, 'initialize']);
 Route::post('/tv/claim', [TvPairingController::class, 'claim'])
