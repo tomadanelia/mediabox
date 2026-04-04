@@ -37,6 +37,7 @@ class SubscriptionController extends Controller
             'duration_days' => $plan->duration_days,
             'price' => $originalPrice,
             'discounted_price' => $currentPrice,
+            'is_active' => $plan->is_active
         ];
     });
 
