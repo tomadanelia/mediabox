@@ -45,5 +45,11 @@ class RadioChannelSeeder extends Seeder
                 'is_free' => true,
             ]
         ];
+         foreach ($radios as $radio) {
+    RadioChannel::updateOrCreate(
+        ['external_id' => $radio['external_id']],
+        $radio
+    );
+}
     }
 }
