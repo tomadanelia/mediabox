@@ -12,7 +12,6 @@ use App\Http\Controllers\SpaAuthController;
 use App\Http\Controllers\TvPairingController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\RemoteController;
-use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\RadioController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminChannelController;
@@ -20,6 +19,7 @@ use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AdminDiscountController;
 use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\AdminRadioController;
+use App\Http\Controllers\AdminNotificationController;
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/categories', [ChannelController::class, 'getCategories']);
@@ -84,7 +84,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/dashboard', [AdminCategoryController::class, 'dashboard'])->middleware('auth:sanctum');
     Route::get('/user/devices', [RemoteController::class, 'getMyDevices']);
     Route::post('/tv/remote/ready', [RemoteController::class, 'tvReady']);
-    Broadcast::routes(['middleware' => ['auth:sanctum']]);
     Route::get('/channels/{id}/download', [DownloadController::class, 'downloadArchive']);
 });
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
@@ -126,6 +125,8 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::post('/{id}/assign', [AdminDiscountController::class, 'assignToUser']); 
     });
     Route::apiResource('radios', AdminRadioController::class);
+    Route::post('/notifications/global', [AdminNotificationController::class, 'broadcastGlobal']);
+    Route::post('/notifications/user/{userId}', [AdminNotificationController::class, 'notifyUser']);
 });
 Route::post('/tv/init', [TvPairingController::class, 'initialize']);
 Route::post('/tv/claim', [TvPairingController::class, 'claim'])
