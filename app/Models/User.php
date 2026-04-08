@@ -15,7 +15,8 @@ use App\Models\Channel;
 use App\Models\UserDevice;
 use App\Models\Company;
 use Illuminate\Support\Facades\DB;
-
+use App\Models\Notification;
+use App\Models\NotificationReadReceipt;
 
 class User extends Authenticatable
 {
@@ -150,6 +151,15 @@ public function getActiveTvDevices()
             'user_devices.device_id',
         ])
         ->get();
+}
+public function notifications()
+{
+    return $this->hasMany(Notification::class);
+}
+
+public function notificationReadReceipts()
+{
+    return $this->hasMany(NotificationReadReceipt::class);
 }
 // Migration: 2024_xx_xx_make_numeric_id_autoincrement.php
 
