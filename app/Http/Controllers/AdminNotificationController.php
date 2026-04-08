@@ -5,7 +5,7 @@ use App\Services\BroadcastService;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-
+use App\Models\Notification;
 class AdminNotificationController extends Controller
 {
     public function __construct(protected BroadcastService $broadcast) {}
