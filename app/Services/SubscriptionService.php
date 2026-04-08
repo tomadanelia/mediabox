@@ -6,11 +6,11 @@ use App\Models\User;
 use App\Models\SubscriptionPlan;
 use App\Models\SiteSetting;
 use App\Models\Discount;
-use App\Models\Company;
 use App\Models\PaymentTransaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use \Illuminate\Support\Str;
+use App\Models\UserSubscription;
 class SubscriptionService
 {
     public function purchasePlan(User $user, string $planId): array
@@ -181,5 +181,48 @@ class SubscriptionService
     }
 
     return $originalPrice;
+}
+
+public function renewSubscription(UserSubscription $sub): bool
+{
+    return DB::transaction(function () use ($sub) {
+        $user = $sub->user;
+        $account = $user->account()->lockForUpdate()->first();
+
+        if (!$account) {
+            return false;
+        }
+
+        $plan = $sub->plan;
+        $price = $this->getBestPrice($user, $plan->id, (float) $plan->price);
+
+        if ($account->balance < $price) {
+            return false;
+        }
+
+        $account->balance -= $price;
+        $account->save();
+
+        $transaction = PaymentTransaction::create([
+            'user_id' => $user->id,
+            'plan_id' => $plan->id,
+            'amount' => $price,
+            'currency' => 'GEL',
+            'status' => 'completed',
+            'payment_method' => 'auto_renewal',
+            'metadata' => [
+                'previous_balance' => $account->balance + $price,
+                'remaining_balance' => $account->balance,
+            ],
+        ]);
+
+        $newExpiresAt = $sub->expires_at->addDays($plan->duration_days);
+
+        $user->subscriptionPlans()->updateExistingPivot($plan->id, [
+            'expires_at' => $newExpiresAt,
+            'transaction_id' => $transaction->id,
+        ]);
+        return true;
+    });
 }
 }

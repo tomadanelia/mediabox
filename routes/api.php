@@ -20,6 +20,7 @@ use App\Http\Controllers\AdminDiscountController;
 use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\AdminRadioController;
 use App\Http\Controllers\AdminNotificationController;
+use App\Http\Controllers\NotificationController;
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/categories', [ChannelController::class, 'getCategories']);
@@ -85,6 +86,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user/devices', [RemoteController::class, 'getMyDevices']);
     Route::post('/tv/remote/ready', [RemoteController::class, 'tvReady']);
     Route::get('/channels/{id}/download', [DownloadController::class, 'downloadArchive']);
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
 });
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/users/search', [AdminUserController::class, 'search']);
