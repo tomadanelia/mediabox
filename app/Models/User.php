@@ -111,21 +111,6 @@ class User extends Authenticatable
 {
     return $this->hasMany(UserDevice::class);
 }
-   protected static function booted()
-{
-     static::creating(function ($user) {
-        if (empty($user->numeric_id)) {
-            $startPoint = 600000;
-            $maxCurrentId = static::max('numeric_id');
-            if (!$maxCurrentId || $maxCurrentId < $startPoint) {
-                $user->numeric_id = $startPoint;
-            } else {
-                $user->numeric_id = $maxCurrentId + 1;
-            }
-        }
-    });
-}
-
 public function enforceTvLimit(): void
 {
     $tvTokens = $this->tokens()
@@ -161,21 +146,5 @@ public function notificationReadReceipts()
 {
     return $this->hasMany(NotificationReadReceipt::class);
 }
-// Migration: 2024_xx_xx_make_numeric_id_autoincrement.php
 
-//public function up(): void
-//{
-    // TODO: Uncomment when deploying to MySQL
-    // This makes numeric_id truly auto-increment at DB level
-    // Run AFTER switching from SQLite to MySQL
-    
-    // Schema::table('users', function (Blueprint $table) {
-    //     $table->unsignedBigInteger('numeric_id')
-    //           ->nullable(false)
-    //           ->change();
-    // });
-    
-    // DB::statement('ALTER TABLE users MODIFY numeric_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE;');
-    // DB::statement('ALTER TABLE users AUTO_INCREMENT = 100000;');
-//}
 }
