@@ -20,8 +20,8 @@ public function handle(SubscriptionService $service, BroadcastService $broadcast
     UserSubscription::with(['user.account', 'plan'])
         ->where('auto_renew', true)
         ->where('is_active', true)
-        ->where('expires_at', '<=', now()->addHours(72))
-        ->where('expires_at', '>', now())
+        ->where('expires_at', '>=', now()->subHours(12))   
+        ->where('expires_at', '<=', now()->addHours(24))   
         ->chunk(100, function ($expiringSubs) use ($service, $broadcast, &$renewed, &$failed) {
             foreach ($expiringSubs as $sub) {
                 try {

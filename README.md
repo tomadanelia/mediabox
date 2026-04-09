@@ -1,59 +1,172 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# IPTV & მედია მართვის სისტემა
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel 12-ზე დაფუძნებული IPTV backend სისტემის ტექნიკური სახელმძღვანელო. დოკუმენტი მოიცავს არქიტექტურას, Redis და Node.js-ის საშუალებით რეალური დროის ინტეგრაციას, ფონურ პროცესებს და საჭირო ადმინისტრაციულ ბრძანებებს.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## შინაარსი
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+1. [სისტემის არქიტექტურის მიმოხილვა](#1-სისტემის-არქიტექტურის-მიმოხილვა)
+2. [რეალური დროის ინტეგრაცია: Redis & Node.js](#2-რეალური-დროის-ინტეგრაცია-redis--nodejs)
+3. [ფონური პროცესები (რიგები)](#3-ფონური-პროცესები-რიგები)
+4. [დაგეგმილი დავალებები (Cron Jobs)](#4-დაგეგმილი-დავალებები-cron-jobs)
+5. [Artisan ბრძანებები (მოვლა და სინქრონიზაცია)](#5-artisan-ბრძანებები-მოვლა-და-სინქრონიზაცია)
+6. [ძირითადი ფუნქციების ლოგიკა](#6-ძირითადი-ფუნქციების-ლოგიკა)
+7. [უსაფრთხოება და მონიტორინგი](#7-უსაფრთხოება-და-მონიტორინგი)
+8. [დაყენების სია](#8-დაყენების-სია)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## 1. სისტემის არქიტექტურის მიმოხილვა
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+აპლიკაცია წარმოადგენს ცენტრალურ კვანძს ძველი MediaBox API-ს, საბოლოო მომხმარებლის კლიენტებს (Web SPA, Android TV APK, მობილური) და გარე გადახდის პროვაიდერებს (InterPay) შორის.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### ძირითადი ტექნოლოგიური სტეკი
 
-## Laravel Sponsors
+| ფენა | ტექნოლოგია |
+|---|---|
+| **Backend** | PHP 8.3.29 / Laravel 12 |
+| **მონაცემთა ბაზა** | MySQL (მთავარი საცავი) |
+| **ქეშირება და რეალური დრო** | Redis |
+| **ავთენტიფიკაცია** | Laravel Sanctum (მობილური/TV) და სესიაზე დაფუძნებული (Web SPA) |
+| **რეალური დროის ძრავა** | Node.js Socket Server (ინტეგრაცია Redis Pub/Sub-ის საშუალებით) |
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+---
 
-### Premium Partners
+## 2. სოკეტების ინტეგრაცია: Redis & Node.js
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+სისტემა იყენებს **გამოყოფილ რეალური დროის არქიტექტურას**. Laravel არ ამუშავებს WebSocket კავშირებს პირდაპირ — სამაგიეროდ, ის Redis Pub/Sub-ის საშუალებით ურთიერთობს დამოუკიდებელ Node.js სერვერთან.
 
-## Contributing
+### Pub/Sub ნაკადი
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+1. **მოვლენის გამოძახება** — Laravel-ში ხდება რაიმე მოქმედება (მაგ., TV-ის დაწყვილების კოდი სკანირდება, ან ადმინი აგზავნის გლობალურ შეტყობინებას).
+2. **გამოქვეყნება** — Laravel აქვეყნებს ივენთს `Redis::publish('channel_name', json_payload)`-ის გამოყენებით.
+3. **გამოწერა** — Node.js სერვერი (Socket.io-ს ან მსგავსი) უსმენს შესაბამის Redis არხებს.
+4. **გაგზავნა** — Node.js სერვერი იღებს მონაცემებს და WebSocket-ის საშუალებით უგზავნის მათ შესაბამის კლიენტ(ებ)ს.
 
-## Code of Conduct
+### ძირითადი Redis არხები
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+| არხი | დანიშნულება |
+|---|---|
+| `pairing_events` | TV-ის დაწყვილება — გადასცემს `claim_token`-ს მას შემდეგ, რაც მომხმარებელი მობილური მოწყობილობიდან TV-ს ავტორიზებს. |
+| `broadcast_notifications` | გლობალური განცხადებები და მომხმარებელზე მორგებული შეტყობინებები. |
+| `tv_session_ready` | მართავს დისტანციური მართვის სესიებს ტელეფონსა და TV-ს შორის. |
 
-## Security Vulnerabilities
+---
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## 3. ფონური პროცესები (რიგები)
 
-## License
+შრომატევადი დავალებები გადაიტვირთება Laravel-ის queue სისტემაში, რათა API-ს პასუხის დაყოვნება მინიმალური იყოს.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### კონფიგურაცია
+
+- **დრაივერი**: `redis` .
+- **პროცესის გაშვება**: წესით superviser უნდა გამოვიყენოთ
+
+```bash
+php artisan queue:work --tries=3
+```
+
+### ძირითადი queue დავალებები
+
+- **`SendSmsJob`** — ამუშავებს გამავალ SMS დადასტურების კოდებს Telecom1 პროვაიდერის საშუალებით. გამოყოფილია მოთხოვნის ციკლისგან, რათა თავიდან ავიცილოთ დაყოვნება გარე SMS შლუზის გამო.
+- **`VerificationCodeMail`** — რიგში ჩასმული ელ-ფოსტაზე დაფუძნებული OTP დადასტურებისთვის.
+
+---
+
+## 4. დაგეგმილი დავალებები (Cron Jobs)
+
+ავტომატური მოვლის დავალებები განსაზღვრულია `routes/console.php`-ში.
+
+### საჭირო Cron ჩანაწერი
+
+Laravel-ის დაგეგმვის გასააქტიურებლად სერვერის crontab-ში დაამატეთ შემდეგი სტრიქონი:
+
+```bash
+* * * * * cd /path-to-your-project && php artisan schedule:run >> /dev/null 2>&1
+```
+
+### განრიგი
+
+| ბრძანება | სიხშირე | აღწერა |
+|---|---|---|
+| `app:process-renewals` | ყოველდღიურად 19:00-ზე | ამოწმებს `auto_renew` ჩართული ვადამოსული გამოწერებს, ახდენს ბალანსის ჩამოჭრას და ახანგრძლივებს წვდომას. |
+
+---
+
+## 5. Artisan ბრძანებები (მოვლა და სინქრონიზაცია)
+
+გამოიყენეთ ეს ბრძანებები ძველი MediaBox API-დან მონაცემების სინქრონიზაციისთვის ან სისტემის მდგომარეობის შენარჩუნებისთვის.
+
+### არხების სინქრონიზაცია
+
+გაუშვით პირველადი დაყენებისას და პერიოდულად კონტენტის კატალოგის განახლებისთვის.
+
+```bash
+# TV არხების სინქრონიზაცია
+# იღებს UID-ებს, არხის ნომრებს და ლოგოებს.
+# ავტომატურად ანიჭებს "Standard Package"-ს ფასიან არხებს.
+php artisan app:sync-channels
+
+# რადიო არხების სინქრონიზაცია
+# იღებს რადიოს stream URL-ებს და მეტამონაცემებს.
+php artisan app:sync-radio
+```
+
+
+## 6. ძირითადი ფუნქციების ლოგიკა
+
+### TV-ის დაწყვილების სისტემა
+
+სისტემა იყენებს claim-ზე დაფუძნებულ დაწყვილების ნაკადს:
+
+1. TV მიმართავს `POST /api/tv/init`-ს, იღებს 6-ნიშნა კოდს და იწყებს WebSocket მოვლენის მოლოდინს.
+2. მობილური აპი მიმართავს `POST /api/tv/pair`-ს კოდით.
+3. Laravel ქმნის `claim_token`-ს, აქვეყნებს მას Redis-ში და TV იღებს მას WebSocket-ის საშუალებით.
+4. TV მიმართავს `POST /api/tv/claim`-ს ტოკენის გამოყენებით, რათა მიიღოს მუდმივი `tv_apk` Sanctum ტოკენი.
+
+### გამოწერა და მრავალი TV-ის ლიმიტი
+
+- **TV ლიმიტი** — მომხმარებლებს აქვთ `tv_limit` ატრიბუტი (ნაგულისხმევი: `1`).
+- **აღსრულება** — `User::enforceTvLimit()` გამოიძახება შესვლისა და დაწყვილების დროს. თუ მომხმარებელი გადააჭარბებს ლიმიტს, ყველაზე ძველი TV სესია ავტომატურად გაუქმდება.
+- **განახლება** — მომხმარებლებს შეუძლიათ შეიძინონ დამატებითი TV სლოტები `SubscriptionService`-ის საშუალებით.
+
+### გადახდის შლუზი (InterPay)
+
+სისტემა მხარს უჭერს ორსაფეხურიან გადახდის დამუშავებას:
+
+| საფეხური | ოპერაცია | აღწერა |
+|---|---|---|
+| 1 | `OP=debt` | ამოწმებს მომხმარებლის არსებობას `numeric_id`-ით (მომხმარებლის ID) და აბრუნებს მიმდინარე ბალანსს. |
+| 2 | `OP=paysuccess` | ატომარულად ზრდის ანგარიშის ბალანსს და ინახავს ტრანზაქციას. |
+
+---
+
+## 7. უსაფრთხოება და მონიტორინგი
+
+### IP-ების თეთრი სია
+
+`/api/metrics/realtime` და InterPay endpoint-ები დაცულია `IpWhiteList` middleware-ით. დაშვებული IP-ები განსაზღვრული უნდა იყოს `.env`-ში `ALLOWED_STATS_AND_INTERPAY_IPS`-ის ქვეშ.
+
+### Sanctum ტოკენის ქეშირება
+
+`CachedPersonalAccessToken` გამოიყენება მონაცემთა ბაზაზე დატვირთვის შესამცირებლად. ტოკენები ქეშირდება Redis-ში 15 წუთის განმავლობაში, რათა დააჩქაროს ავთენტიფიკაცია მაღალი სიხშირის heartbeat მოთხოვნებისთვის.
+
+### Heartbeat სისტემა
+
+აქტიური მაყურებლები თვალყურს ედევნებიან Redis-ის დალაგებულ სეტებში `active_viewers:{channelId}` გასაღების პატერნით. ეს უზრუნველყოფს რეალური დროის კონკურენტულობის მონაცემებს Zabbix ან Prometheus-ის მსგავსი მონიტორინგის ინსტრუმენტებისთვის.
+
+---
+
+## 8. დაყენების სია
+
+- [ ] **გარემო** — დააკონფიგურირეთ `.env` MySQL-ის, Redis-ისა და ფოსტის მონაცემებით.
+- [ ] **მონაცემთა ბაზა** — გაუშვით `php artisan migrate --seed`.
+- [ ] **კონტენტის სინქრონიზაცია**:
+  ```bash
+  php artisan app:sync-channels
+  php artisan app:sync-radio
+  ```
+- [ ] **Node.js სერვერი** — დარწმუნდით, რომ socket სერვერი გაშვებულია და დაკავშირებულია იმავე Redis-ის ინსტანციასთან.
+- [ ] **რიგის პროცესი** — გაუშვით `php artisan queue:work`.
+- [ ] **განმსაზღვრელი** — შეამოწმეთ, რომ სისტემის crontab ჩანაწერი აქტიურია.
