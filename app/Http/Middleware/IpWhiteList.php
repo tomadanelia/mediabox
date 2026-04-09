@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Middleware;
 
 use Closure;
@@ -8,11 +7,14 @@ use Symfony\Component\HttpFoundation\Response;
 
 class IpWhiteList
 {
-    public function handle(Request $request, Closure $next)
+    public function handle(Request $request, Closure $next): Response
     {
-        abort_if($request->ip() !== '10.0.0.16' && $request->ip() !== '127.0.0.1', 403, 'Unauthorized IP');
+        $allowedIps = config('services.monitoring.allowed_ips');
+
+        if (!in_array($request->ip(), $allowedIps)) {
+            abort(403, 'Unauthorized IP: ' . $request->ip());
+        }
 
         return $next($request);
     }
 }
-

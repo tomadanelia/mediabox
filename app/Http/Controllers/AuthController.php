@@ -31,12 +31,11 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
             'full_name' => $request->full_name,
         ]);
-        $otp = $this->verificationService->generateAndSendcode($user);
+        $this->verificationService->generateAndSendcode($user);
         
         return response()->json([
             'message' => 'User registered successfully. Please verify your account.',
             'user_id' => $user->id,
-            'code' => $otp, // For testing purposes  i am removing  in production
         ], 201);
     }
 
@@ -94,22 +93,20 @@ class AuthController extends Controller
         }
 
         if (! $user->email_verified_at && ! $user->phone_verified_at) {
-        $otp = $this->verificationService->generateAndSendcode($user);
+        $this->verificationService->generateAndSendcode($user);
 
         return response()->json([
             'message' => 'Account not verified.',
             'user_id' => $user->id,
-            'code' => $otp // For testing
         ], 403);
     }
         
         RateLimiter::clear($throttleKey);
-        $otp = $this->verificationService->generateAndSendcode($user);
+        $this->verificationService->generateAndSendcode($user);
 
         return response()->json([
             'message' => 'Credentials valid. Please verify OTP.',
             'user_id' => $user->id,
-            'code' => $otp 
         ]);
     }
     public function verifyLogin(VerifyRequest $request): JsonResponse
@@ -150,13 +147,12 @@ class AuthController extends Controller
         return response()->json(['message' => 'Please wait before requesting a new code.'], 429);
     }
 
-    $otp = $this->verificationService->generateAndSendcode($user);
+    $this->verificationService->generateAndSendcode($user);
 
     Cache::put($cooldownKey, true, 60);
 
     return response()->json([
         'message' => 'Verification code sent.',
-        'code' => $otp, // For testing purposes; i am removing in production
     ]);
 
     }
@@ -177,12 +173,11 @@ public function forgotPassword(Request $request): JsonResponse
         return response()->json(['message' => 'Please wait before requesting a new code.'], 429);
     }
 
-    $otp = $this->verificationService->generateAndSendcode($user);
+    $this->verificationService->generateAndSendcode($user);
     Cache::put($cooldownKey, true, 60);
 
     return response()->json([
         'message' => 'Verification code sent.',
-        'code' => $otp // For testing
     ]);
 }
 

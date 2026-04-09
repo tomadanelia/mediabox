@@ -43,5 +43,8 @@ return [
     'nginx' => [
         'secure_link_secret' => env('NGINX_SECURE_LINK_SECRET'),
     ],
+    'monitoring' => [
+        'allowed_ips' => explode(',', env('ALLOWED_STATS_AND_INTERPAY_IPS', '127.0.0.1')),
+    ],
 
 ];
