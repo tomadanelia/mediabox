@@ -16,20 +16,12 @@ return new class extends Migration
             $table->unique(['user_id', 'channel_id']);
     });
 
-    Schema::create('user_watch_history', function (Blueprint $table) {
-        $table->uuid('id')->primary();
-        $table->foreignUuid('user_id')->constrained('users')->onDelete('cascade');
-        $table->foreignUuid('channel_id')->constrained('channels')->onDelete('cascade');
-        $table->timestamp('watched_at');
-        $table->index(['user_id', 'watched_at']);
-
-    });
+    
 }
 
     
     public function down(): void
     {
         Schema::dropIfExists('user_favourites');
-        Schema::dropIfExists('user_watch_history');
     }
 };

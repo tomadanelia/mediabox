@@ -80,8 +80,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user/preferences/favourite-channels', [UserPreferencesController::class, 'getFavouriteChannels']);
     Route::post('/user/preferences/favourite-channels', [UserPreferencesController::class, 'addFavouriteChannel']);
     Route::delete('/user/preferences/favourites/{channelId}', [UserPreferencesController::class, 'removeFavouriteChannel']);
-    Route::post('/user/preferences/watch', [UserPreferencesController::class, 'updateWatchHistory']);
-    Route::get('/user/preferences/watch/last', [UserPreferencesController::class, 'getLastviewedChannels']);
     Route::get('/admin/dashboard', [AdminCategoryController::class, 'dashboard'])->middleware('auth:sanctum');
     Route::get('/user/devices', [RemoteController::class, 'getMyDevices']);
     Route::post('/tv/remote/ready', [RemoteController::class, 'tvReady']);
