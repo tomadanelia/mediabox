@@ -88,6 +88,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/channels/{id}/download', [DownloadController::class, 'downloadArchive']);
     Route::get('/notifications', [NotificationController::class, 'index']);
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+    Route::get('/profile/socket-token', [ProfileController::class, 'getSocketToken']);
 });
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/users/search', [AdminUserController::class, 'search']);

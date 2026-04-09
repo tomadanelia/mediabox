@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\Company;
+use App\Services\SocketTokenService;
 use App\Models\UserDevice;
 
 class ProfileController extends Controller
@@ -126,5 +127,12 @@ class ProfileController extends Controller
         'device_id' => $device->device_id,
         'device_name' => $device->device_name,
     ]);
+}
+public function getSocketToken(Request $request, SocketTokenService $service)
+{
+
+    $token = $service->generateToken($request->user()->id, 'spa_web');
+
+    return response()->json(['socket_token' => $token]);
 }
 }
