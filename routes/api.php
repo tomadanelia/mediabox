@@ -21,6 +21,7 @@ use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\AdminRadioController;
 use App\Http\Controllers\AdminNotificationController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\StatsController;
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/categories', [ChannelController::class, 'getCategories']);
@@ -142,3 +143,8 @@ Route::prefix('radio')->group(function () {
     Route::get('/', [RadioController::class, 'index']);
     Route::get('/{id}/stream', [RadioController::class, 'getStreamUrl']);
 });
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/channels/{id}/heartbeat', [StatsController::class, 'heartbeat']);
+});
+Route::get('/metrics/realtime', [StatsController::class, 'getMetrics'])
+    ->middleware('whitelist.ip');
