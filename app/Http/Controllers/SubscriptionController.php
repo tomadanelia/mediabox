@@ -108,6 +108,19 @@ public function upgradeTvLimit(Request $request): JsonResponse
         ], 422);
     }
 }
+public function getTvLimitPrice(Request $request): JsonResponse
+{
+    $request->validate([
+        'quantity' => 'nullable|integer|min:1|max:10'
+    ]);
+
+    $user = $request->user();
+    $quantity = $request->integer('quantity', 1);
+
+    $priceDetails = $this->subscriptionService->calculateTvUpgradePrice($user, $quantity);
+
+    return response()->json($priceDetails);
+}
    public function getTvDevices(Request $request): JsonResponse
 {
     $user = $request->user();

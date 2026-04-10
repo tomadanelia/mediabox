@@ -73,6 +73,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/plans/purchase', [SubscriptionController::class, 'purchase']);
     Route::get('/plans/my', [SubscriptionController::class, 'myPlans']);
     Route::post('/plans/tv-limit',[SubscriptionController::class,'upgradeTvLimit']);
+    Route::get('/plans/tv-limit-price', [SubscriptionController::class, 'getTvLimitPrice']);
     Route::get('/tv/logged-in/devices',[SubscriptionController::class,'getTvDevices']);
     Route::post('/tv/free/device-slots', [SubscriptionController::class, 'logoutTvDevice']);
     Route::post('/tv/device-name',[ProfileController::class,'giveTvDeviceName']);

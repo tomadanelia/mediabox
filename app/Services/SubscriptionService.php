@@ -225,4 +225,17 @@ public function renewSubscription(UserSubscription $sub): bool
         return true;
     });
 }
+public function calculateTvUpgradePrice(User $user, int $quantity = 1): array
+{
+    $basePrice = (float) (SiteSetting::where('key', 'extra_tv_price')->value('value') ?? 5.00);
+    $pricePerSlot = (float) $this->getBestPrice($user, null, $basePrice);
+
+    return [
+        'extra_tv_price' => $basePrice,
+        'discounted_price' => $pricePerSlot,
+        'quantity' => $quantity,
+        'total_price' => $pricePerSlot * $quantity,
+        'has_discount' => $pricePerSlot < $basePrice
+    ];
+}
 }
