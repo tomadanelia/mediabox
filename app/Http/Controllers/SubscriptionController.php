@@ -63,13 +63,16 @@ class SubscriptionController extends Controller
     public function purchase(Request $request): JsonResponse
 {
     $request->validate([
-        'plan_id' => 'required|uuid|exists:subscription_plans,id'
+        'plan_id' => 'required|uuid|exists:subscription_plans,id',
+        'auto_renew' => 'nullable|boolean'
     ]);
 
     try {
-        $result = $result = $this->subscriptionService->purchasePlan(
+    $autoRenew = $request->boolean('auto_renew', true);
+    $result = $result = $this->subscriptionService->purchasePlan(
     $request->user(),
-    $request->plan_id
+    $request->plan_id,
+    $autoRenew
 );
         return response()->json($result, 200);
     } catch (\Exception $e) {

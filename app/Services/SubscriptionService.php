@@ -11,9 +11,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use \Illuminate\Support\Str;
 use App\Models\UserSubscription;
+use Illuminate\Support\Facades\Cache;
 class SubscriptionService
 {
-    public function purchasePlan(User $user, string $planId): array
+    public function purchasePlan(User $user, string $planId,bool $autoRenew ): array
     {   
     $identifier = $user->full_name ?? (string)$user->numeric_id;
     $field = $user->full_name ? 'full_name' : 'customer_id';
@@ -23,7 +24,7 @@ class SubscriptionService
         $identifier = $user->company->name ?? 'Unknown Company';
         $field = 'company_name';
     }
-        return DB::transaction(function () use ($user, $planId,$identifier,$field) {
+        return DB::transaction(function () use ($user, $planId,$identifier,$field,$autoRenew) {
             $account = $user->account()->lockForUpdate()->first();
             
             if (!$account) {
@@ -66,7 +67,8 @@ class SubscriptionService
                 
                 $user->subscriptionPlans()->updateExistingPivot($plan->id, [
                     'expires_at' => $expiresAt,
-                    'transaction_id' => $transaction->id 
+                    'transaction_id' => $transaction->id,
+                    'auto_renew' => $autoRenew
                 ]);
             } else {
                 $user->subscriptionPlans()->attach($plan->id, [
@@ -75,9 +77,11 @@ class SubscriptionService
                     'started_at' => now(),
                     'expires_at' => $expiresAt,
                     'is_active' => true,
-                    'auto_renew' => false
+                    'auto_renew' => $autoRenew
                 ]);
             }
+            
+            Cache::forget("user_plan_ids_{$user->id}");
 
             return [
             'success' => true,
