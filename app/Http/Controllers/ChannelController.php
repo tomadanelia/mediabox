@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Channel;
+use Illuminate\Support\Facades\Cache;
 use App\Models\ChannelCategory; 
 use App\Services\ConcurrencyService;
 use App\Services\SyncingService;
