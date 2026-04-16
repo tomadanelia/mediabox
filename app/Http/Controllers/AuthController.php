@@ -55,6 +55,7 @@ class AuthController extends Controller
         }
 
         $user->save();
+        $user->grantFreePlan();
         $this->verificationService->clearOtp($user->id);
 
         Account::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);

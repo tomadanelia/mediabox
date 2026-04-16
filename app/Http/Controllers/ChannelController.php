@@ -19,7 +19,10 @@ class ChannelController extends Controller
 {
     Auth::shouldUse('sanctum');
     $user = request()->user();
-    
+    $freePlanId = Cache::rememberForever('system_free_plan_id', function() {
+        return SubscriptionPlan::where('name_en', 'Free Package')->value('id');
+    });
+
     $query = Channel::with('category')
         ->where('is_active', true)
         ->orderBy('number', 'asc');
@@ -30,18 +33,11 @@ class ChannelController extends Controller
 
     $allChannels = $query->get();
     $userActivePlanIds = $user ? $user->getActivePlanIds() : [];
+    $userActivePlanIds[] = $freePlanId; 
 
     $accessibleIds = $allChannels->filter(function ($channel) use ($userActivePlanIds) {
-        if ($channel->is_free) return true;
-        
-        if (!empty($userActivePlanIds)) {
-            $requiredPlanIds = $channel->relationLoaded('plans') 
-                ? $channel->plans->pluck('id')->toArray() 
-                : $channel->getRequiredPlanIds();
-                
-            return !empty(array_intersect($requiredPlanIds, $userActivePlanIds));
-        }
-        return false;
+      $requiredPlanIds = $channel->plans->pluck('id')->toArray();
+        return !empty(array_intersect($requiredPlanIds, $userActivePlanIds));
     })->pluck('external_id')->values()->toArray();
 
     $formattedChannels = $allChannels->map(function ($channel) {

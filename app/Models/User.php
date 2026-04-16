@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -60,6 +59,18 @@ class User extends Authenticatable
             ->toArray();
   });
 }
+    public function grantFreePlan(): void
+{
+    $this->subscriptionPlans()->syncWithoutDetaching([
+        '00000000-0000-0000-0000-000000000000' => [
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'started_at' => now(),
+            'expires_at' => now()->addYears(100),
+            'is_active' => true,
+            'auto_renew' => true,
+        ]
+    ]);
+}
     public function isAdmin(): bool
 {
     return $this->role === 'admin';
@@ -111,7 +122,7 @@ class User extends Authenticatable
 {
     return $this->hasMany(UserDevice::class);
 }
-public function enforceTvLimit(): void
+    public function enforceTvLimit(): void
 {
     $tvTokens = $this->tokens()
         ->where('name', 'tv_apk')
@@ -124,7 +135,7 @@ public function enforceTvLimit(): void
         $tvTokens->take($excess)->each->delete();
     }
 }
-public function getActiveTvDevices()
+    public function getActiveTvDevices()
 {
 
     return DB::table('personal_access_tokens')

@@ -32,7 +32,7 @@ class SpaAuthController extends Controller
         if ($user->phone) $user->phone_verified_at = now();
         if ($user->email) $user->email_verified_at = now();
         $user->save();
-
+        $user->grantFreePlan();
         $this->verificationService->clearOtp($user->id);
         Account::firstOrCreate(['user_id' => $user->id], ['balance' => 0]);
 

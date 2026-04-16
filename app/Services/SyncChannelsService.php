@@ -17,6 +17,8 @@ class SyncChannelsService
         if (empty($channels)) {
             return 0;
         }
+        $freePlan = SubscriptionPlan::where('name_en', 'Free Package')->first();
+        $standardPlan = SubscriptionPlan::where('name_en', 'Standard Package')->first();
 
         $category = ChannelCategory::firstOrCreate(
             ['name_en' => 'General'],
@@ -26,7 +28,6 @@ class SyncChannelsService
                 'description_ka' => 'სტანდარტული არხები'
             ]
         );
-        $defaultPlan = SubscriptionPlan::where('name_en', 'Standard Package')->first();
         $count = 0;
         foreach ($channels as $remote) {
             $channel = Channel::firstOrCreate(
@@ -41,15 +42,14 @@ class SyncChannelsService
                     'is_free' => $remote['FREE'] == "1",
                 ]
             );
-
-            if ($channel->wasRecentlyCreated && $channel->is_free === false) {
-                if ($defaultPlan) {
-                    $channel->plans()->syncWithoutDetaching([$defaultPlan->id]);
-                }
-            }
+            if ($remote['FREE'] == "1") {
+              if ($freePlan) $channel->plans()->syncWithoutDetaching([$freePlan->id]);
+            } else {
+            if ($standardPlan) $channel->plans()->syncWithoutDetaching([$standardPlan->id]);
+        }
             $count++;
         }
-
+        
         return $count;
     }
 }
