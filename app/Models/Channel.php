@@ -51,4 +51,14 @@ class Channel extends Model
 {
     return $this->hasMany(UserWatchHistory::class);
 }
+ 
+    public function streamUrls()
+{
+    return $this->hasMany(ChannelUrl::class, 'channel_id', 'external_id');
+}
+
+    public function archiveUrls()
+{
+    return $this->hasMany(ChannelArchiveUrl::class, 'channel_id', 'external_id');
+}
 }
