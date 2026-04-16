@@ -16,12 +16,14 @@ class SubscriptionPlan extends Model
         'price',
         'duration_days',
         'is_active',
+        'is_public' => 'boolean',
     ];
     protected $casts=[
         'price'=>'decimal:2',
         'id'=>'string',
         'duration_days'=>'integer',
         'is_active'=>'boolean',
+        'is_public'=>'boolean',
     ];
      public function channels()
     {

@@ -22,7 +22,9 @@ class SubscriptionController extends Controller
     Auth::shouldUse('sanctum');
     $user = request()->user();
 
-    $plans = SubscriptionPlan::where('is_active', true)->get();
+    $plans = SubscriptionPlan::where('is_active', true)
+    ->where('is_public', true)
+    ->get();
 
     $formattedPlans = $plans->map(function ($plan) use ($user) {
         $originalPrice = (float) $plan->price;

@@ -54,6 +54,7 @@ class AdminPlansController extends Controller
             'price' => 'required|numeric|min:0',
             'duration_days' => 'required|integer|min:1',
             'is_active' => 'nullable|boolean',
+            'is_public' => 'nullable|boolean', 
         ]);
 
         $plan = SubscriptionPlan::create($validated);
