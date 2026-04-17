@@ -22,6 +22,7 @@ use App\Http\Controllers\AdminRadioController;
 use App\Http\Controllers\AdminNotificationController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\StatsController;
+use App\Http\Controllers\AdminChannelUrlController;
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/categories', [ChannelController::class, 'getCategories']);
@@ -131,6 +132,14 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::apiResource('radios', AdminRadioController::class);
     Route::post('/notifications/global', [AdminNotificationController::class, 'broadcastGlobal']);
     Route::post('/notifications/user/{userId}', [AdminNotificationController::class, 'notifyUser']);
+    Route::prefix('/channels/{external_id}')->group(function () {
+    Route::get('urls', [AdminChannelUrlController::class, 'index']);
+    Route::post('urls', [AdminChannelUrlController::class, 'storeLive']);
+    Route::delete('urls/{id}', [AdminChannelUrlController::class, 'destroyLive']);
+
+    Route::post('archive-urls', [AdminChannelUrlController::class, 'storeArchive']);
+    Route::delete('archive-urls/{id}', [AdminChannelUrlController::class, 'destroyArchive']);
+});
 });
 Route::post('/tv/init', [TvPairingController::class, 'initialize']);
 Route::post('/tv/claim', [TvPairingController::class, 'claim'])
