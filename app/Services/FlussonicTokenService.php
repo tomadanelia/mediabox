@@ -91,7 +91,7 @@ class FlussonicTokenService
     private function resolveCountryCode(string $ip): string
 {
     try {
-        $reader = new \GeoIp2\Database\Reader(storage_path('/var/www/geoip/GeoLite2-Country.mmdb'));
+        $reader = new \GeoIp2\Database\Reader('/var/www/geoip/GeoLite2-Country.mmdb');
         $record = $reader->country($ip);
         return $record->country->isoCode;
     } catch (\Exception $e) {
