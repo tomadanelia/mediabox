@@ -6,6 +6,31 @@ use Illuminate\Support\Facades\Cache;
 use App\Http\Requests\AdminChannelUpdateRequest;
 use App\Services\SyncChannelsService;
 class AdminChannelController extends Controller{
+    public function store(Request $request, SyncChannelsService $syncService): JsonResponse
+{
+    $validated = $request->validate([
+        'external_id' => 'required|string|unique:channels,external_id',
+        'number'      => 'required|integer',
+        'name'        => 'required|string|max:255',
+        'icon_url'    => 'nullable|string|url',
+        'category_id' => 'required|uuid|exists:channel_categories,id',
+        'is_active'   => 'boolean',
+        'is_free'     => 'required|boolean',
+        ]);
+
+    $channel = DB::transaction(function () use ($validated, $syncService) {
+        $channel = Channel::create($validated);
+
+        $syncService->assignDefaultPlans($channel, $validated['is_free']);
+
+        return $channel;
+    });
+
+    return response()->json([
+        'message' => 'Channel created and assigned to ' . ($validated['is_free'] ? 'Free' : 'Standard') . ' package.',
+        'data' => $channel
+    ], 201);
+}
     public function update(AdminChannelUpdateRequest $request, string $id): JsonResponse
     {
         $channel = Channel::findOrFail($id);

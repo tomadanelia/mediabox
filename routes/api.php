@@ -93,12 +93,15 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/users/search', [AdminUserController::class, 'search']);
-    Route::post('/channels/sync', [AdminChannelController::class, 'sync']);
     Route::post('/users', [AdminUserController::class, 'store']);
     Route::post('/users/adjust-balance', [AdminUserController::class, 'adjustBalance']);
     Route::post('/logos', [SettingController::class, 'updateLogos']);
     Route::post('/settings/tv-price', [SettingController::class, 'updateExtraTvPrice']);
-    Route::put('/channels/{id}', [AdminChannelController::class, 'update']);
+    Route::prefix('channels')->group(function () {
+    Route::post('/', [AdminChannelController::class, 'store']); 
+    Route::put('/{id}', [AdminChannelController::class, 'update']); 
+    Route::post('/sync', [AdminChannelController::class, 'sync']); 
+    });
     Route::get('/users', [AdminCategoryController::class, 'users']);
     Route::prefix('users/{userId}')->group(function () {
         Route::post('/grant-plan', [AdminPlansController::class, 'grantPlanToUser']);

@@ -51,4 +51,13 @@ class SyncChannelsService
         
         return $count;
     }
+    public function assignDefaultPlans(Channel $channel, bool $isFree): void
+{
+    $planName = $isFree ? 'Free Package' : 'Standard Package';
+    $plan = SubscriptionPlan::where('name_en', $planName)->first();
+
+    if ($plan) {
+        $channel->plans()->syncWithoutDetaching([$plan->id]);
+    }
+}
 }
