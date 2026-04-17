@@ -34,8 +34,7 @@ class SyncChannelsService
                 ['external_id' => $remote['UID']], 
                 [
                     'number' => $remote['CHANNEL_NUMBER'],
-                    'name_ka' => $remote['CHANNEL_NAME'],
-                    'name_en' => $remote['CHANNEL_NAME'], 
+                    'name'   => $remote['CHANNEL_NAME'], 
                     'icon_url' => $remote['CHANNEL_LOGO'],
                     'category_id' => $category->id,
                     'is_active' => $remote['STATUS'] == "1",

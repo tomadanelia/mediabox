@@ -46,7 +46,7 @@ class ChannelController extends Controller
         return [
             'uuid' => $channel->id,
             'id' => $channel->external_id, 
-            'name' => $channel->name_ka,   
+            'name' => $channel->name,   
             'logo' => $channel->icon_url,
             'number' => $channel->number,
             'category_en' => $channel->category?->name_en ?? null,

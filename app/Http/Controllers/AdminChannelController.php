@@ -20,8 +20,7 @@ class AdminChannelController extends Controller{
             'message' => 'Channel updated successfully',
             'data' => [
                 'id' => $channel->id,
-                'name_ka' => $channel->name_ka,
-                'name_en' => $channel->name_en,
+                'name' => $channel->name,
                 'icon_url' => $channel->icon_url
             ]
         ]);
