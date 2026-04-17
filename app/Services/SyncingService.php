@@ -20,7 +20,7 @@ class SyncingService
     /**
      * Entry point for Live Streams
      */
-    public function getStreamUrl(string $externalId, string $clientIp): ?array
+     public function getStreamUrl(string $externalId, string $clientIp): ?array
     {
         $cacheKey = "channel_stream_{$externalId}_{$clientIp}";
 
@@ -145,7 +145,6 @@ private function getStreamUrlLegacy(string $externalId, string $clientIp): ?arra
         return Channel::where('external_id', $externalId)
             ->first()
             ?->streamUrls()
-            ->where('url_type', 3)
             ->first();
     }
 
