@@ -55,19 +55,22 @@ class FlussonicTokenService
      * Adjust the parsing below if your naming convention differs.
      */
     public function fromTemplateUrl(string $templateUrl, string $clientIp): array
-    {
-        $query = [];
-        parse_str(parse_url($templateUrl, PHP_URL_QUERY), $query);
+{
+    $query = [];
+    parse_str(parse_url($templateUrl, PHP_URL_QUERY), $query);
 
-        // channel param looks like "tv/rustavi2" or "s1/pirveli_arkhi"
+    if (isset($query['server']) && isset($query['stream'])) {
+        $server = $query['server']; // "s01/8080"
+        $stream = $query['stream']; // "tv/pirveli_arkhi"
+    } else {
         $channel = $query['channel'] ?? '';
         $parts   = explode('/', ltrim($channel, '/'), 2);
-
-        $server = $parts[0] ?? 'default';
-        $stream = $parts[1] ?? $channel;
-
-        return $this->generateTokenData($stream, $server, $clientIp);
+        $server  = $parts[0] ?? 'default';
+        $stream  = $parts[1] ?? $channel;
     }
+
+    return $this->generateTokenData($stream, $server, $clientIp);
+}
 
     /**
      * Same as fromTemplateUrl but builds archive URLs.
