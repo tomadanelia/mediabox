@@ -76,19 +76,48 @@ class FlussonicTokenService
      * Same as fromTemplateUrl but builds archive URLs.
      * Returns an array shaped like SyncingService::getArchiveUrl expects.
      */
-    public function fromTemplateUrlForArchive(string $templateUrl, string $clientIp, int $startEpoch): array
+   public function fromTemplateUrlForArchive(string $templateUrl, string $clientIp, int $startEpoch): array
 {
-    $base    = $this->fromTemplateUrl($templateUrl, $clientIp);
-    $stream  = ltrim($base['channel'], '/'); 
-    $token   = $base['token'];
-    $cdn     = config('services.flussonic.cdn');
+    $query = [];
+    parse_str(parse_url($templateUrl, PHP_URL_QUERY), $query);
+    $stream = $query['channel'] ?? '';
+
+    $data = $this->generateArchiveTokenData($stream, $clientIp, $startEpoch);
 
     return [
-        'url'    => "{$cdn}/tv/{$stream}/video-timeshift_abs-{$startEpoch}.m3u8?token={$token}",
-        'length' => 0,
+        'url'    => $data['archive_url'],
     ];
 }
+    public function generateArchiveTokenData(string $stream, string $clientIp, int $startEpoch): array
+{
+    $key      = config('services.flussonic.key_default');
+    $lifetime = 1 * 3600;
+    $cdn      = config('services.flussonic.cdn'); // https://cdn.streamer.mediabox.ge
 
+    $desync    = 300;
+    $starttime = time() - $desync;
+    $endtime   = $starttime + $lifetime; // no $desync added here unlike live
+
+    $salt    = bin2hex(random_bytes(16));
+    $hashStr = $stream . $clientIp . $starttime . $endtime . $key . $salt;
+    $hash    = sha1($hashStr);
+    $token   = $hash . '-' . $salt . '-' . $endtime . '-' . $starttime;
+
+    return [
+        'token'     => $token,
+        'url'       => $cdn,
+        'channel'   => '/' . $stream,
+        'starttime' => (string) $starttime,
+        'endtime'   => (string) $endtime,
+        'client_ip' => $clientIp,
+        'hls'       => '/index.m3u8',
+        'mpegts'    => 'mpegts',
+        'hash'      => $hash,
+        'salt'      => $salt,
+        'full_hls'  => "$cdn/$stream/index.m3u8?token=$token",
+        'archive_url' => "$cdn/$stream/video-timeshift_abs-{$startEpoch}.m3u8?token=$token",
+    ];
+}
     private function resolveCountryCode(string $ip): string
 {
     try {
