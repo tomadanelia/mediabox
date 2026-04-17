@@ -77,19 +77,21 @@ class FlussonicTokenService
      * Returns an array shaped like SyncingService::getArchiveUrl expects.
      */
     public function fromTemplateUrlForArchive(string $templateUrl, string $clientIp, int $startEpoch): array
-    {
-        $base = $this->fromTemplateUrl($templateUrl, $clientIp);
+{
+    $base = $this->fromTemplateUrl($templateUrl, $clientIp);
+    $fullHls = $base['full_hls'];
 
-        $outHost = parse_url($base['url'], PHP_URL_SCHEME) . '://' . parse_url($base['url'], PHP_URL_HOST);
-        $server  = ltrim(parse_url($base['url'], PHP_URL_PATH), '/');
-        $stream  = ltrim($base['channel'], '/');
-        $token   = $base['token'];
+    $parsed    = parse_url($fullHls);
+    $pathParts = explode('/', $parsed['path']);
+    array_pop($pathParts); 
+    $basePath  = implode('/', $pathParts);
+    $query     = $parsed['query'] ?? '';
 
-        return [
-            'url'    => "$outHost/$server/$stream/video-timeshift_abs-{$startEpoch}.m3u8?token=$token",
-            'length' => 0, // not available locally; enrich from DB if needed
-        ];
-    }
+    return [
+        'url'    => "{$parsed['scheme']}://{$parsed['host']}{$basePath}/video-timeshift_abs-{$startEpoch}.m3u8?{$query}",
+        'length' => 0,
+    ];
+}
 
     private function resolveCountryCode(string $ip): string
 {
