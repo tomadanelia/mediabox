@@ -84,7 +84,7 @@ class FlussonicTokenService
     $cdn     = config('services.flussonic.cdn');
 
     return [
-        'url'    => "{$cdn}/{$stream}/video-timeshift_abs-{$startEpoch}.m3u8?token={$token}",
+        'url'    => "{$cdn}/tv/{$stream}/video-timeshift_abs-{$startEpoch}.m3u8?token={$token}",
         'length' => 0,
     ];
 }
