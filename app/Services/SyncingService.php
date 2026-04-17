@@ -5,6 +5,8 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
+use App\Models\Channel;
+
 
 class SyncingService
 {
@@ -13,8 +15,20 @@ class SyncingService
         'Origin' => 'https://222.mediabox.ge',
         'Accept' => 'application/json',
     ];
+    public function __construct(private FlussonicTokenService $tokenService) {}
 
-   public function getStreamUrl(string $externalId, string $clientIp): ?array
+    public function getStreamUrl(string $externalId, string $clientIp): ?array
+    {
+        $cacheKey = "channel_stream_{$externalId}_{$clientIp}";
+
+        return Cache::remember($cacheKey, 300, function () use ($externalId, $clientIp) {
+            if ($this->isProduction()) {
+                return $this->getStreamUrlLocal($externalId, $clientIp);
+            }
+            return $this->getStreamUrlLegacy($externalId, $clientIp);
+        });
+    }
+   public function getStreamUrlLegacy(string $externalId, string $clientIp): ?array
 {
     $key = "channel_stream_{$externalId}_{$clientIp}";
 
@@ -44,8 +58,27 @@ class SyncingService
         return null;
     });
 }
+private function getStreamUrlLocal(string $externalId, string $clientIp): ?array
+    {
+        $source = $this->getLiveSource($externalId);
+        if (!$source) return null;
 
-public function getArchiveUrl(string $externalId, int $startEpoch, string $clientIp): ?array
+        $tokenData = $this->tokenService->fromTemplateUrl($source->channel_url, $clientIp);
+
+        return [
+            'url'        => $tokenData['full_hls'],
+            'expires_at' => $tokenData['endtime'],
+        ];
+    }
+        public function getArchiveUrl(string $externalId, int $startEpoch, string $clientIp): ?array
+    {
+        if ($this->isProduction()) {
+            return $this->getArchiveUrlLocal($externalId, $startEpoch, $clientIp);
+        }
+        return $this->getArchiveUrlLegacy($externalId, $startEpoch, $clientIp);
+    }
+
+public function getArchiveUrlLegacy(string $externalId, int $startEpoch, string $clientIp): ?array
 {
     $response = Http::withoutVerifying()->withHeaders([
         'Origin' => 'https://222.mediabox.ge',
@@ -84,6 +117,14 @@ public function getArchiveUrl(string $externalId, int $startEpoch, string $clien
     }
     return null;
 }
+   private function getArchiveUrlLocal(string $externalId, int $startEpoch, string $clientIp): ?array
+    {
+        $source = $this->getArchiveSource($externalId);
+        if (!$source) return null;
+
+        return $this->tokenService->fromTemplateUrlForArchive($source->channel_url, $clientIp, $startEpoch);
+    }
+
    public function fetchChannelList(): array
 {
     try {

@@ -46,5 +46,11 @@ return [
     'monitoring' => [
         'allowed_ips' => explode(',', env('ALLOWED_STATS_AND_INTERPAY_IPS', '127.0.0.1')),
     ],
+    'flussonic' => [
+    'key_default' => env('FLUSSONIC_KEY_DEFAULT'),
+    'key_special' => env('FLUSSONIC_KEY_SPECIAL'),
+    'proxy_ge'    => env('FLUSSONIC_PROXY_GE'),
+    'proxy_global' => env('FLUSSONIC_PROXY_GLOBAL'),
+],
 
 ];
