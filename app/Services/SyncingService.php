@@ -39,12 +39,9 @@ class SyncingService
         $cacheKey = "channel_archive_{$externalId}_{$startEpoch}_{$clientIp}";
 
         return Cache::remember($cacheKey, 300, function () use ($externalId, $startEpoch, $clientIp) {
-            if ($this->isProduction()) {
                 $local = $this->getArchiveUrlLocal($externalId, $startEpoch, $clientIp);
                 if ($local) return $local;
-            }
-
-            return $this->getArchiveUrlLegacy($externalId, $startEpoch, $clientIp);
+                return null;
         });
     }
 private function getStreamUrlLegacy(string $externalId, string $clientIp): ?array
@@ -131,7 +128,7 @@ private function getStreamUrlLegacy(string $externalId, string $clientIp): ?arra
 
         return [
             'url'    => $archiveData['url'],
-            'length' => $source->archive_length ?? 168, // Default to 7 days if column is empty
+            'length' => $source->archive_length ?? 168, 
         ];
     }
 
@@ -153,7 +150,6 @@ private function getStreamUrlLegacy(string $externalId, string $clientIp): ?arra
         return Channel::where('external_id', $externalId)
             ->first()
             ?->archiveUrls()
-            ->where('url_type', 3)
             ->first();
     }
 
