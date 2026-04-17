@@ -25,12 +25,10 @@ class SyncingService
         $cacheKey = "channel_stream_{$externalId}_{$clientIp}";
 
         return Cache::remember($cacheKey, 300, function () use ($externalId, $clientIp) {
-            if ($this->isProduction()) {
                 $local = $this->getStreamUrlLocal($externalId, $clientIp);
                 if ($local) return $local;
-            }
+                return null;
 
-            return $this->getStreamUrlLegacy($externalId, $clientIp);
         });
     }
     /**
