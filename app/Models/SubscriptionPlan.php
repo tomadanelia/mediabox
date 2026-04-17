@@ -16,7 +16,7 @@ class SubscriptionPlan extends Model
         'price',
         'duration_days',
         'is_active',
-        'is_public' => 'boolean',
+        'is_public',
     ];
     protected $casts=[
         'price'=>'decimal:2',
