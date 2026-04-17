@@ -7,7 +7,6 @@ use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 use App\Models\Channel;
 
-
 class SyncingService
 {
     private string $baseUrl = 'https://222.mediabox.ge/webapi';
@@ -15,50 +14,71 @@ class SyncingService
         'Origin' => 'https://222.mediabox.ge',
         'Accept' => 'application/json',
     ];
+
     public function __construct(private FlussonicTokenService $tokenService) {}
 
+    /**
+     * Entry point for Live Streams
+     */
     public function getStreamUrl(string $externalId, string $clientIp): ?array
     {
         $cacheKey = "channel_stream_{$externalId}_{$clientIp}";
 
         return Cache::remember($cacheKey, 300, function () use ($externalId, $clientIp) {
             if ($this->isProduction()) {
-                return $this->getStreamUrlLocal($externalId, $clientIp);
+                $local = $this->getStreamUrlLocal($externalId, $clientIp);
+                if ($local) return $local;
             }
+
             return $this->getStreamUrlLegacy($externalId, $clientIp);
         });
     }
-   public function getStreamUrlLegacy(string $externalId, string $clientIp): ?array
-{
-    $key = "channel_stream_{$externalId}_{$clientIp}";
 
-    return Cache::remember($key, 300, function () use ($externalId, $clientIp) {
-          $response = Http::withoutVerifying()->withHeaders([
-        'Origin' => 'https://222.mediabox.ge',
-        'Referer' => 'https://222.mediabox.ge/',
-        'User-Agent' => 'PostmanRuntime/7.51.0',
-    ])->post($this->baseUrl, [
-        'Method' => 'GetLiveStream',
-        'Pars' => [
-            'CHANNEL_ID' => (int)$externalId,
-        ],
-        'urltype' => 'flussonic',
-        'clientip'   => $clientIp,
-    ]);
+    /**
+     * Entry point for Archive Streams
+     */
+    public function getArchiveUrl(string $externalId, int $startEpoch, string $clientIp): ?array
+    {
+        $cacheKey = "channel_archive_{$externalId}_{$startEpoch}_{$clientIp}";
+
+        return Cache::remember($cacheKey, 300, function () use ($externalId, $startEpoch, $clientIp) {
+            if ($this->isProduction()) {
+                $local = $this->getArchiveUrlLocal($externalId, $startEpoch, $clientIp);
+                if ($local) return $local;
+            }
+
+            return $this->getArchiveUrlLegacy($externalId, $startEpoch, $clientIp);
+        });
+    }
+
+    /**
+     * LEGACY: Fetch Live from MediaBox PHP API
+     */
+    private function getStreamUrlLegacy(string $externalId, string $clientIp): ?array
+    {
+        $response = Http::withoutVerifying()->withHeaders([
+            'Origin' => 'https://222.mediabox.ge',
+            'Referer' => 'https://222.mediabox.ge/',
+            'User-Agent' => 'PostmanRuntime/7.51.0',
+        ])->post($this->baseUrl, [
+            'Method' => 'GetLiveStream',
+            'Pars'   => ['CHANNEL_ID' => (int)$externalId],
+            'urltype' => 'flussonic',
+            'clientip' => $clientIp,
+        ]);
 
         if ($response->successful()) {
             $data = $response->json();
-            if (!empty($data['URL'])) {
-                return [
-                    'url' => $data['URL'], 
-                    'expires_at' => $data['END'] ?? null,
-                ];
-            }
+            // Return normalized keys if available
+            return isset($data['URL']) ? $data : null;
         }
         return null;
-    });
-}
-private function getStreamUrlLocal(string $externalId, string $clientIp): ?array
+    }
+
+    /**
+     * LOCAL: Generate Live Token from DB Template
+     */
+    private function getStreamUrlLocal(string $externalId, string $clientIp): ?array
     {
         $source = $this->getLiveSource($externalId);
         if (!$source) return null;
@@ -66,63 +86,84 @@ private function getStreamUrlLocal(string $externalId, string $clientIp): ?array
         $tokenData = $this->tokenService->fromTemplateUrl($source->channel_url, $clientIp);
 
         return [
-            'url'        => $tokenData['full_hls'],
-            'expires_at' => $tokenData['endtime'],
+            'result' => 'success',
+            'URL'    => $tokenData['full_hls'], // Uppercase to match legacy API
+            'END'    => $tokenData['endtime'],  // Uppercase to match legacy API
+            'data'   => $tokenData
         ];
     }
-        public function getArchiveUrl(string $externalId, int $startEpoch, string $clientIp): ?array
+
+    /**
+     * LEGACY: Fetch Archive from MediaBox PHP API
+     */
+    private function getArchiveUrlLegacy(string $externalId, int $startEpoch, string $clientIp): ?array
     {
-        if ($this->isProduction()) {
-            return $this->getArchiveUrlLocal($externalId, $startEpoch, $clientIp);
+        $response = Http::withoutVerifying()->withHeaders($this->headers)
+            ->post($this->baseUrl, [
+                'Method' => 'GetArchiveStream',
+                'Pars' => [
+                    'CHANNEL_ID' => (int) $externalId,
+                    'clientip'   => $clientIp
+                ],
+                'urltype' => 'flussonic',
+            ]);
+
+        if ($response->successful()) {
+            $baseData = $response->json();
+            if (!empty($baseData['URL'])) {
+                $parsed = parse_url($baseData['URL']);
+                $pathParts = explode('/', $parsed['path']);
+                array_pop($pathParts); 
+                $basePath = implode('/', $pathParts);
+
+                return [
+                    'result' => 'success',
+                    'URL'    => "{$parsed['scheme']}://{$parsed['host']}{$basePath}/video-timeshift_abs-{$startEpoch}.m3u8?{$parsed['query']}",
+                    'ARCHIVE_LENGTH' => $baseData['ARCHIVE_LENGTH'] ?? 0,
+                ];
+            }
         }
-        return $this->getArchiveUrlLegacy($externalId, $startEpoch, $clientIp);
+        return null;
     }
 
-public function getArchiveUrlLegacy(string $externalId, int $startEpoch, string $clientIp): ?array
-{
-    $response = Http::withoutVerifying()->withHeaders([
-        'Origin' => 'https://222.mediabox.ge',
-        'Referer' => 'https://222.mediabox.ge/',
-        'User-Agent' => 'PostmanRuntime/7.51.0',
-    ])->post($this->baseUrl, [
-        'Method' => 'GetArchiveStream',
-        'Pars' => [
-            'CHANNEL_ID' => (int) $externalId,
-            'clientip'   => $clientIp
-        ],
-        'urltype' => 'flussonic',
-        'clientip'   => $clientIp,
-
-    ]);
-
-    if ($response->successful()) {
-        $baseData = $response->json();
-        if (!empty($baseData['URL'])) {
-            $rawUrl = $baseData['URL']; 
-            $parsed = parse_url($rawUrl);
-            $pathParts = explode('/', $parsed['path']);
-            array_pop($pathParts); 
-            $basePath = implode('/', $pathParts);
-
-            $timeshiftFile = "video-timeshift_abs-{$startEpoch}.m3u8";
-            $query = $parsed['query'] ?? '';
-            
-            $finalUrl = "{$parsed['scheme']}://{$parsed['host']}{$basePath}/{$timeshiftFile}?{$query}";
-
-            return [
-                'url' => $finalUrl,
-                'length'=> $baseData['ARCHIVE_LENGTH'] ?? 0,
-            ];
-        }
-    }
-    return null;
-}
-   private function getArchiveUrlLocal(string $externalId, int $startEpoch, string $clientIp): ?array
+    /**
+     * LOCAL: Generate Archive Token from DB Template
+     */
+    private function getArchiveUrlLocal(string $externalId, int $startEpoch, string $clientIp): ?array
     {
         $source = $this->getArchiveSource($externalId);
         if (!$source) return null;
 
-        return $this->tokenService->fromTemplateUrlForArchive($source->channel_url, $clientIp, $startEpoch);
+        $archiveData = $this->tokenService->fromTemplateUrlForArchive($source->channel_url, $clientIp, $startEpoch);
+
+        return [
+            'result' => 'success',
+            'URL'    => $archiveData['url'],
+            'ARCHIVE_LENGTH' => $source->archive_length ?? 168 // Using DB column from your migration
+        ];
+    }
+
+    private function isProduction(): bool
+    {
+        return config('app.env') === 'production';
+    }
+
+    private function getLiveSource(string $externalId)
+    {
+        return Channel::where('external_id', $externalId)
+            ->first()
+            ?->streamUrls()
+            ->where('url_type', 3)
+            ->first();
+    }
+
+    private function getArchiveSource(string $externalId)
+    {
+        return Channel::where('external_id', $externalId)
+            ->first()
+            ?->archiveUrls()
+            ->where('url_type', 3)
+            ->first();
     }
 
    public function fetchChannelList(): array
@@ -147,8 +188,6 @@ public function getArchiveUrlLegacy(string $externalId, int $startEpoch, string 
         return [];
     }
 }
-   
-
     /**
      * Get EPG (Cached for 1 hour)
      */
