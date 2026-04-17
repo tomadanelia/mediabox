@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Services;
-
+use GeoIp2\Database\Reader;
 class FlussonicTokenService
 {
     /**
@@ -89,13 +89,15 @@ class FlussonicTokenService
     }
 
     private function resolveCountryCode(string $ip): string
-    {
-        if (function_exists('geoip_country_code_by_name')) {
-            $cc = geoip_country_code_by_name($ip);
-            return ($cc === false) ? '' : $cc;
-        }
-        return 'GE';
+{
+    try {
+        $reader = new \GeoIp2\Database\Reader(storage_path('/var/www/geoip/GeoLite2-Country.mmdb'));
+        $record = $reader->country($ip);
+        return $record->country->isoCode;
+    } catch (\Exception $e) {
+        return '';
     }
+}
 
     private function resolveOutHost(string $ccn, string $clientIp): string
     {
