@@ -163,4 +163,33 @@ $user = $userQuery->select(['id','numeric_id','username','email','phone','full_n
 ],
 ]);
 }
+
+public function updateRole(Request $request, string $userId): JsonResponse
+{
+    $request->validate([
+        'role' => 'required|string|in:admin,user,businessman'
+    ]);
+
+    if ($request->user()->id === $userId && $request->role !== 'admin') {
+        return response()->json(['message' => 'You cannot remove your own admin privileges.'], 403);
+    }
+
+    $user = User::findOrFail($userId);
+    $user->update(['role' => $request->role]);
+
+    \Illuminate\Support\Facades\Log::warning("Admin Role Change", [
+        'performer_id' => $request->user()->id,
+        'target_user'  => $user->id,
+        'new_role'     => $request->role
+    ]);
+
+    return response()->json([
+        'message' => "User role updated to {$request->role} successfully.",
+        'user' => [
+            'id' => $user->id,
+            'username' => $user->username,
+            'role' => $user->role
+        ]
+    ]);
+}
 }

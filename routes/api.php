@@ -136,13 +136,15 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::post('/notifications/global', [AdminNotificationController::class, 'broadcastGlobal']);
     Route::post('/notifications/user/{userId}', [AdminNotificationController::class, 'notifyUser']);
     Route::prefix('/channels/{external_id}')->group(function () {
-    Route::get('urls', [AdminChannelUrlController::class, 'index']);
-    Route::post('urls', [AdminChannelUrlController::class, 'storeLive']);
-    Route::delete('urls/{id}', [AdminChannelUrlController::class, 'destroyLive']);
+      Route::get('urls', [AdminChannelUrlController::class, 'index']);
+      Route::post('urls', [AdminChannelUrlController::class, 'storeLive']);
+      Route::delete('urls/{id}', [AdminChannelUrlController::class, 'destroyLive']);
 
-    Route::post('archive-urls', [AdminChannelUrlController::class, 'storeArchive']);
-    Route::delete('archive-urls/{id}', [AdminChannelUrlController::class, 'destroyArchive']);
-});
+      Route::post('archive-urls', [AdminChannelUrlController::class, 'storeArchive']);
+      Route::delete('archive-urls/{id}', [AdminChannelUrlController::class, 'destroyArchive']);
+    });
+    Route::patch('/users/{userId}/role', [AdminUserController::class, 'updateRole']);
+
 });
 Route::post('/tv/init', [TvPairingController::class, 'initialize']);
 Route::post('/tv/claim', [TvPairingController::class, 'claim'])
