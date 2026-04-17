@@ -51,6 +51,9 @@ return [
     'key_special' => env('FLUSSONIC_KEY_SPECIAL'),
     'proxy_ge'    => env('FLUSSONIC_PROXY_GE'),
     'proxy_global' => env('FLUSSONIC_PROXY_GLOBAL'),
+    'cdn' => env('FLUSSONIC_CDN', 'https://cdn.streamer.mediabox.ge'),
+
 ],
+    
 
 ];

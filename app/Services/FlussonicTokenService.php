@@ -78,17 +78,13 @@ class FlussonicTokenService
      */
     public function fromTemplateUrlForArchive(string $templateUrl, string $clientIp, int $startEpoch): array
 {
-    $base = $this->fromTemplateUrl($templateUrl, $clientIp);
-    $fullHls = $base['full_hls'];
-
-    $parsed    = parse_url($fullHls);
-    $pathParts = explode('/', $parsed['path']);
-    array_pop($pathParts); 
-    $basePath  = implode('/', $pathParts);
-    $query     = $parsed['query'] ?? '';
+    $base    = $this->fromTemplateUrl($templateUrl, $clientIp);
+    $stream  = ltrim($base['channel'], '/'); 
+    $token   = $base['token'];
+    $cdn     = config('services.flussonic.cdn');
 
     return [
-        'url'    => "{$parsed['scheme']}://{$parsed['host']}{$basePath}/video-timeshift_abs-{$startEpoch}.m3u8?{$query}",
+        'url'    => "{$cdn}/{$stream}/video-timeshift_abs-{$startEpoch}.m3u8?token={$token}",
         'length' => 0,
     ];
 }
