@@ -11,6 +11,8 @@ _ide_helper_models.php
 /.fleet
 /.idea
 /.nova
+/database/legacy_dump.sql
+app/database/legacy_dump.sql
 /.phpunit.cache
 /.vscode
 /.zed
