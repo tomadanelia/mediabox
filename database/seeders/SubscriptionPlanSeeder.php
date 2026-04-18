@@ -8,6 +8,7 @@ use App\Models\SubscriptionPlan;
 class SubscriptionPlanSeeder extends Seeder
 {
     public const FREE_PLAN_ID = '00000000-0000-0000-0000-000000000000';
+    public const STANDARD_PLAN_ID = '11111111-1111-1111-1111-111111111111';
 
     public function run(): void
     {
@@ -24,8 +25,9 @@ class SubscriptionPlanSeeder extends Seeder
             ]
         );
         SubscriptionPlan::updateOrCreate(
-            ['name_en' => 'Standard Package'],
+            ['id' => self::STANDARD_PLAN_ID], 
             [
+                'name_en' => 'Standard Package',
                 'name_ka' => 'სტანდარტული პაკეტი',        
                 'description_ka' => 'სტანდარტული არხები', 
                 'description_en' => 'Standard Channels', 
