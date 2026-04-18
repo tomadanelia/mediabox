@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
     {
           $this->call([
         ChannelCategorySeeder::class,
+        SubscriptionPlanSeeder::class,
+        RadioChannelSeeder::class,
     ]);
     }
 }

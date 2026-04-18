@@ -10,9 +10,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->unsignedBigInteger('numeric_id')->unique()->change();
+            $table->unsignedBigInteger('numeric_id')->change();
         });
-
         DB::statement('ALTER TABLE users MODIFY numeric_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT;');
 
         DB::statement('ALTER TABLE users AUTO_INCREMENT = 600000;');
@@ -21,9 +20,5 @@ return new class extends Migration
     public function down(): void
     {
         DB::statement('ALTER TABLE users MODIFY numeric_id BIGINT UNSIGNED NOT NULL;');
-
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropUnique(['numeric_id']);
-        });
     }
 };

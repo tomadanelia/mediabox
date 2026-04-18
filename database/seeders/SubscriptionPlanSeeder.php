@@ -23,5 +23,16 @@ class SubscriptionPlanSeeder extends Seeder
                 'is_active' => true,
             ]
         );
+        SubscriptionPlan::updateOrCreate(
+            ['name_en' => 'Standard Package'],
+            [
+                'name_ka' => 'სტანდარტული პაკეტი',        
+                'description_ka' => 'სტანდარტული არხები', 
+                'description_en' => 'Standard Channels', 
+                'price' => 9.99,
+                'duration_days' => 30,
+                'is_active' => true,
+            ]
+        );
     }
 }
