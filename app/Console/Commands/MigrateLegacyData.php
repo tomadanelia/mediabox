@@ -50,7 +50,7 @@ class MigrateLegacyData extends Command
             $cleanUrl = str_replace('&amp;', '&', $item->CHANNEL_URL);
 
             ChannelUrl::updateOrCreate(
-                ['uid' => $item->UID],
+                ['id' => $item->UID],
                 [
                     'channel_id'  => (string) $item->CHANNEL_ID,
                     'channel_url' => $cleanUrl,
@@ -68,7 +68,7 @@ class MigrateLegacyData extends Command
             $cleanUrl = str_replace('&amp;', '&', $item->CHANNEL_URL);
 
             ChannelArchiveUrl::updateOrCreate(
-                ['uid' => $item->UID],
+                ['id' => $item->UID],
                 [
                     'channel_id'     => (string) $item->CHANNEL_ID,
                     'channel_url'    => $cleanUrl,
