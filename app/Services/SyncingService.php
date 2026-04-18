@@ -139,18 +139,28 @@ private function getStreamUrlLegacy(string $externalId, string $clientIp): ?arra
 
     private function getLiveSource(string $externalId)
     {
-        return Channel::where('external_id', $externalId)
-            ->first()
-            ?->streamUrls()
-            ->first();
+       $channel = Channel::where('external_id', $externalId)->first();
+
+    if (!$channel) return null;
+
+    return $channel->streamUrls()
+        ->where('url_type', 3)            
+        ->where('channel_url', '!=', '') 
+        ->orderBy('priority', 'desc')    
+        ->first();
     }
 
     private function getArchiveSource(string $externalId)
     {
-        return Channel::where('external_id', $externalId)
-            ->first()
-            ?->archiveUrls()
-            ->first();
+    $channel = Channel::where('external_id', $externalId)->first();
+
+    if (!$channel) return null;
+
+    return $channel->archiveUrls()
+        ->where('url_type', 3)            
+        ->where('channel_url', '!=', '') 
+        ->orderBy('priority', 'desc')
+        ->first();
     }
 
    public function fetchChannelList(): array
