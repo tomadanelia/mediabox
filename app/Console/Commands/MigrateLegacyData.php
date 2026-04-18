@@ -18,6 +18,7 @@ class MigrateLegacyData extends Command
     public function handle(SyncChannelsService $syncService)
     {
         $filePath = database_path('legacy_dump.sql');
+        $imageBaseUrl = 'https://img.mediabox.ge/';
         if (File::exists($filePath)) {
             $this->info('Importing raw SQL dump into database...');
             DB::unprepared(File::get($filePath));
@@ -29,12 +30,15 @@ class MigrateLegacyData extends Command
         $this->info("Processing {$legacyChannels->count()} channels...");
 
         foreach ($legacyChannels as $item) {
+             $fullLogoUrl = !empty($item->CHANNEL_LOGO) 
+                ? $imageBaseUrl . $item->CHANNEL_LOGO 
+                : null;
             $channel = Channel::updateOrCreate(
                 ['external_id' => (string) $item->UID],
                 [
                     'name'        => $item->CHANNEL_NAME,
                     'number'      => (int) $item->CHANNEL_NUMBER,
-                    'icon_url'    => $item->CHANNEL_LOGO,
+                    'icon_url'    => $fullLogoUrl,
                     'is_active'   => (bool) $item->STATUS,
                     'is_free'     => (bool) $item->FREE,
             ]
