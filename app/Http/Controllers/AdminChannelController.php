@@ -31,6 +31,20 @@ class AdminChannelController extends Controller{
         'data' => $channel
     ], 201);
 }
+    public function toggleActive(Request $request, string $id): JsonResponse
+{
+    $channel = Channel::findOrFail($id);
+
+    $channel->is_active = !$channel->is_active;
+    $channel->save();
+    Cache::forget("plan_channels_formatted_*");
+    Cache::forget("channel_stream_{$channel->external_id}_*");
+
+    return response()->json([
+        'message' => 'Channel ' . ($channel->is_active ? 'enabled' : 'disabled') . ' successfully.',
+        'is_active' => $channel->is_active
+    ]);
+}
     public function update(AdminChannelUpdateRequest $request, string $id): JsonResponse
     {
         $channel = Channel::findOrFail($id);
@@ -46,7 +60,8 @@ class AdminChannelController extends Controller{
             'data' => [
                 'id' => $channel->id,
                 'name' => $channel->name,
-                'icon_url' => $channel->icon_url
+                'icon_url' => $channel->icon_url,
+                'is_active' => $channel->is_active,
             ]
         ]);
     }

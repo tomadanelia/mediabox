@@ -16,7 +16,8 @@ class AdminChannelUpdateRequest extends FormRequest
         return [
     
             'name'     => 'sometimes|required|string|max:255',
-            'icon_url' => 'sometimes|required|string|max:500'
+            'icon_url' => 'sometimes|required|string|max:500',
+            'is_active' => 'sometimes|boolean',
         ];
     }
 }

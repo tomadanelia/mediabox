@@ -94,10 +94,21 @@ class AdminCategoryController extends Controller
         ]);
     }
     public function users()
-    {
-        $users = User::with('account')
-    ->select('id', 'username', 'email', 'full_name', 'avatar_url', 'role')
-    ->paginate(20);
-        return response()->json($users);
-    }
+{
+    $users = User::with('account')
+        ->select([
+            'id', 
+            'numeric_id', 
+            'username', 
+            'email', 
+            'phone',      
+            'full_name', 
+            'avatar_url', 
+            'role', 
+            'created_at'
+        ])
+        ->paginate(20);
+
+    return response()->json($users);
+}
 }
