@@ -17,7 +17,7 @@ class AdminChannelUrlController extends Controller
             ->firstOrFail();
 
         return response()->json([
-            'channel_name' => $channel->name_en,
+            'channel_name' => $channel->name,
             'live_urls'    => $channel->streamUrls,
             'archive_urls' => $channel->archiveUrls,
         ]);

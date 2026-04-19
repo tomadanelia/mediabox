@@ -101,6 +101,14 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::post('/', [AdminChannelController::class, 'store']); 
     Route::put('/{id}', [AdminChannelController::class, 'update']); 
     Route::post('/sync', [AdminChannelController::class, 'sync']); 
+     Route::prefix('{external_id}')->group(function () {
+      Route::get('urls', [AdminChannelUrlController::class, 'index']);
+      Route::post('urls', [AdminChannelUrlController::class, 'storeLive']);
+      Route::delete('urls/{id}', [AdminChannelUrlController::class, 'destroyLive']);
+
+      Route::post('archive-urls', [AdminChannelUrlController::class, 'storeArchive']);
+      Route::delete('archive-urls/{id}', [AdminChannelUrlController::class, 'destroyArchive']);
+    });
     });
     Route::get('/users', [AdminCategoryController::class, 'users']);
     Route::prefix('users/{userId}')->group(function () {
@@ -135,14 +143,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::apiResource('radios', AdminRadioController::class);
     Route::post('/notifications/global', [AdminNotificationController::class, 'broadcastGlobal']);
     Route::post('/notifications/user/{userId}', [AdminNotificationController::class, 'notifyUser']);
-    Route::prefix('/channels/{external_id}')->group(function () {
-      Route::get('urls', [AdminChannelUrlController::class, 'index']);
-      Route::post('urls', [AdminChannelUrlController::class, 'storeLive']);
-      Route::delete('urls/{id}', [AdminChannelUrlController::class, 'destroyLive']);
-
-      Route::post('archive-urls', [AdminChannelUrlController::class, 'storeArchive']);
-      Route::delete('archive-urls/{id}', [AdminChannelUrlController::class, 'destroyArchive']);
-    });
+   
     Route::patch('/users/{userId}/role', [AdminUserController::class, 'updateRole']);
 
 });
