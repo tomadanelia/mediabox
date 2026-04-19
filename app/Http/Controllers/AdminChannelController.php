@@ -5,6 +5,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Requests\AdminChannelUpdateRequest;
 use App\Services\SyncChannelsService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 class AdminChannelController extends Controller{
     public function store(Request $request, SyncChannelsService $syncService): JsonResponse
 {
