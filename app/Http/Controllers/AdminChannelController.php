@@ -91,13 +91,24 @@ class AdminChannelController extends Controller{
             ]
         ]);
     }
-    public function sync(SyncChannelsService $syncService): JsonResponse
-{
-    $count = $syncService->syncChannels();
 
-    return response()->json([
-        'message' => "Successfully synced {$count} channels from legacy API.",
-        'count' => $count
-    ]);
+public function sync(SyncChannelsService $syncService): JsonResponse
+{
+     try {
+        $stats = $syncService->migrateFromDump($syncService);
+
+        return response()->json([
+            'message' => "Successfully synchronized all data from the legacy dump.",
+            'details' => [
+                'channels_synced' => $stats['channels'],
+                'stream_urls_synced' => $stats['urls'],
+                'archives_synced' => $stats['archives']
+            ]
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Sync failed: ' . $e->getMessage()
+        ], 500);
+    }
 }
 }
