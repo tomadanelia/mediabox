@@ -8,6 +8,30 @@ use App\Services\SyncChannelsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 class AdminChannelController extends Controller{
+    public function index(): JsonResponse
+{
+    
+    $channels = Channel::with('category')
+        ->orderBy('number', 'asc')
+        ->get();
+
+    $formatted = $channels->map(function ($channel) {
+        return [
+            'uuid'        => $channel->id,          
+            'id'          => $channel->external_id, 
+            'name'        => $channel->name,        
+            'logo'        => $channel->icon_url,
+            'number'      => $channel->number,
+            'category_en' => $channel->category?->name_en ?? 'Uncategorized',
+            'category_ka' => $channel->category?->name_ka ?? 'უკატეგორიო',
+            'category_id' => $channel->category_id,
+            'is_free'     => (bool) $channel->is_free,
+            'is_active'   => (bool) $channel->is_active, 
+        ];
+    });
+
+    return response()->json($formatted);
+}
     public function store(Request $request, SyncChannelsService $syncService): JsonResponse
 {
     $validated = $request->validate([
