@@ -69,7 +69,7 @@ class AdminChannelController extends Controller{
     return response()->json([
         'message' => 'Channel ' . ($channel->is_active ? 'enabled' : 'disabled') . ' successfully.',
         'is_active' => $channel->is_active
-    ]);
+    ],200);
 }
     public function update(AdminChannelUpdateRequest $request, string $id): JsonResponse
     {
