@@ -147,7 +147,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::post('/notifications/user/{userId}', [AdminNotificationController::class, 'notifyUser']);
    
     Route::patch('/users/{userId}/role', [AdminUserController::class, 'updateRole']);
-
+    Route::post('/settings/homepage', [SettingController::class, 'updateHomepageSettings']);
 });
 Route::post('/tv/init', [TvPairingController::class, 'initialize']);
 Route::post('/tv/claim', [TvPairingController::class, 'claim'])
@@ -166,3 +166,4 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 Route::get('/metrics/realtime', [StatsController::class, 'getMetrics'])
     ->middleware('whitelist.ip');
+Route::get('/settings/homepage', [SettingController::class, 'getHomepageSettings']);

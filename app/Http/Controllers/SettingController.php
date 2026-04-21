@@ -82,7 +82,31 @@ class SettingController extends Controller
 
         return asset(Storage::url($path)) . '?v=' . $version;
     });
-
+   
     return response()->json($data);
+}
+    public function updateHomepageSettings(Request $request): JsonResponse
+{
+    $request->validate([
+        'homepage_bg_url' => 'required|string|max:2048', 
+    ]);
+
+    $setting = SiteSetting::updateOrCreate(
+        ['key' => 'homepage_bg_url'],
+        ['value' => $request->homepage_bg_url]
+    );
+
+    return response()->json([
+        'message' => 'Homepage background updated successfully',
+        'homepage_bg_url' => $setting->value
+    ]);
+}
+public function getHomepageSettings(): JsonResponse
+{
+    $bgUrl = SiteSetting::where('key', 'homepage_bg_url')->value('value');
+    
+    return response()->json([
+        'homepage_bg_url' => $bgUrl ?? '' 
+    ]);
 }
 }
