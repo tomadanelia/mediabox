@@ -29,4 +29,13 @@ class SubscriptionPlan extends Model
     {
         return $this->belongsToMany(Channel::class, 'channel_subscription_plan', 'plan_id', 'channel_id');
     }
+    public function users()
+{
+    return $this->belongsToMany(
+        User::class, 
+        'user_subscriptions', 
+        'plan_id', 
+        'user_id'
+    )->withPivot('expires_at', 'is_active');
+}
 }

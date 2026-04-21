@@ -105,19 +105,45 @@ class AdminPlansController extends Controller
             'data' => $plan
         ],200);
     }
-    public function deletePlan(string $planId)
+    public function deletePlan(string $planId): JsonResponse
 {
     $plan = SubscriptionPlan::findOrFail($planId);
 
-    if ($plan->channels()->count() > 0) {
+    $channels = $plan->channels()->select('channels.id', 'name', 'external_id', 'number')->get();
+    
+    if ($channels->isNotEmpty()) {
         return response()->json([
-            'message' => 'Cannot delete plan: it still has channels assigned.'
-        ], 400); 
+            'message' => 'Cannot delete plan: channels are still assigned to it.',
+            'error_code' => 'PLAN_HAS_CHANNELS',
+            'items' => $channels->map(fn($c) => [
+                'id' => $c->id,
+                'display_name' => "({$c->number}) {$c->name}",
+                'external_id' => $c->external_id
+            ])
+        ], 400);
+    }
+
+    $users = $plan->users()
+        ->select('users.id', 'username', 'numeric_id', 'full_name')
+        ->distinct()
+        ->get();
+
+    if ($users->isNotEmpty()) {
+        return response()->json([
+            'message' => 'Cannot delete plan: users are currently or were previously subscribed.',
+            'error_code' => 'PLAN_HAS_USERS',
+            'items' => $users->map(fn($u) => [
+                'id' => $u->id,
+                'display_name' => $u->full_name ?? $u->username,
+                'numeric_id' => $u->numeric_id
+            ])
+        ], 400);
     }
 
     $plan->delete();
 
-    Cache::forget("plan_channels_{$planId}");
+    \Illuminate\Support\Facades\Cache::forget("plan_channels_{$planId}");
+    \Illuminate\Support\Facades\Cache::forget("plan_channels_formatted_{$planId}");
 
     return response()->json([
         'message' => 'Subscription plan deleted successfully'
@@ -126,14 +152,17 @@ class AdminPlansController extends Controller
     public function addChannelsToPlan(Request $request, string $planId)
     {
         $plan = SubscriptionPlan::findOrFail($planId);
-
+        $freePlanId = '00000000-0000-0000-0000-000000000000';
         $validated = $request->validate([
             'channel_ids' => 'required|array',
             'channel_ids.*' => 'uuid|exists:channels,id',
         ]);
 
         $plan->channels()->syncWithoutDetaching($validated['channel_ids']);
-        Channel::whereIn('id', $validated['channel_ids'])->update(['is_free' => false]);
+        $shouldBeFree = ($plan->id === $freePlanId);
+        Channel::whereIn('id', $validated['channel_ids'])->update([
+        'is_free' => $shouldBeFree
+        ]);
         Cache::forget("plan_channels_{$planId}");
         foreach($validated['channel_ids'] as $id) {
         Cache::forget("channel_plans_{$id}");
