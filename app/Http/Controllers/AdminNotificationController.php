@@ -50,7 +50,8 @@ class AdminNotificationController extends Controller
         'message' => 'required|string|max:500',
     ]);
 
-    Notification::create([
+    $notification = Notification::create([
+        'id'      => \Illuminate\Support\Str::uuid(),
         'user_id' => null, 
         'type'    => 'global_announcement',
         'title'   => $request->title,
@@ -59,7 +60,11 @@ class AdminNotificationController extends Controller
         'sent_at' => now()
     ]);
 
-    $this->broadcast->sendGlobalAnnouncement($request->title, $request->message);
+    $this->broadcast->sendGlobalAnnouncement(
+        $notification->id, 
+        $request->title, 
+        $request->message
+    );
 
     return response()->json(['message' => 'Global announcement saved and broadcasted.']);
 }
