@@ -59,8 +59,7 @@ class AdminCategoryController extends Controller
         ->select([
             'id',
             'external_id',
-            'name_ka',
-            'name_en',
+            'name',
             'icon_url',
             'category_id',
             'number'
