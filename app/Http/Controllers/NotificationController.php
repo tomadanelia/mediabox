@@ -9,26 +9,32 @@ use Illuminate\Http\Request;
 class NotificationController extends Controller
 {
     public function index(Request $request)
-    {
-        $user = $request->user();
+{
+    $user = $request->user();
 
-        $notifications = Notification::where(function ($query) use ($user) {
-                $query->where(function ($q) use ($user) {
-                        $q->where('user_id', $user->id)
-                          ->where('status', '!=', 'read');
-                    })
-                    ->orWhere(function ($q) use ($user) {
-                        $q->whereNull('user_id')
-                          ->whereDoesntHave('readReceipts', function ($inner) use ($user) {
-                              $inner->where('user_id', $user->id);
-                          });
-                    });
-            })
-            ->orderBy('created_at', 'desc')
-            ->paginate($request->input('per_page', 20));
+    $notifications = Notification::where(function ($query) use ($user) {
+            $query->where('user_id', $user->id)
+                  ->orWhereNull('user_id');
+        })
+        ->with(['readReceipts' => function($query) use ($user) {
+            $query->where('user_id', $user->id);
+        }])
+        ->orderBy('created_at', 'desc')
+        ->paginate($request->input('per_page', 20));
 
-        return response()->json($notifications);
-    }
+    $notifications->getCollection()->transform(function ($notification) use ($user) {
+        if ($notification->user_id !== null) {
+            $notification->read = ($notification->status === 'read');
+        } else {
+            $notification->read = $notification->readReceipts->isNotEmpty();
+        }
+        unset($notification->readReceipts);
+        
+        return $notification;
+    });
+
+    return response()->json($notifications);
+}
 
     public function markAsRead($id, Request $request)
     {
