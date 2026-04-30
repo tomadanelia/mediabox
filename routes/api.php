@@ -101,6 +101,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::post('/', [AdminChannelController::class, 'store']); 
     Route::get('/', [AdminChannelController::class, 'index']);
     Route::patch('/{id}/toggle-active', [AdminChannelController::class, 'toggleActive']);
+    Route::patch('/channels/{id}/toggle-public', [AdminChannelController::class, 'togglePublic']);
     Route::put('/{id}', [AdminChannelController::class, 'update']); 
     Route::post('/sync', [AdminChannelController::class, 'sync']); 
      Route::prefix('{external_id}')->group(function () {

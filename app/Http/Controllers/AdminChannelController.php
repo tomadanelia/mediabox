@@ -74,6 +74,22 @@ class AdminChannelController extends Controller{
         'is_active' => $channel->is_active
     ], 200);
 }
+    public function togglePublic(Request $request, string $id): JsonResponse
+{
+    $channel = Channel::findOrFail($id);
+     $channel->is_public = !$channel->is_public;
+    $channel->save();
+
+    Cache::forget('global_active_channels_list');
+    foreach ($channel->plans as $plan) {
+        Cache::forget("plan_channels_{$plan->id}");
+    }
+    
+    return response()->json([
+        'message' => 'Channel ' . ($channel->is_public ? 'made public' : 'made private') . ' successfully.',
+        'is_public' => $channel->is_public
+    ], 200);
+}
     public function update(AdminChannelUpdateRequest $request, string $id): JsonResponse
     {
         $channel = Channel::findOrFail($id);
