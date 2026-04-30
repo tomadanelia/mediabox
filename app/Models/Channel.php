@@ -21,7 +21,8 @@ class Channel extends Model
         'category_id',
         'is_active',
         'is_free',
-        'view_count'
+        'view_count',
+        'is_public'
     ];
 
 
@@ -29,6 +30,7 @@ class Channel extends Model
         'is_active' => 'boolean',
         'is_free' => 'boolean',
         'view_count' => 'integer',
+        'is_public' => 'boolean',
     ];
     public function getRequiredPlanIds(): array
     {

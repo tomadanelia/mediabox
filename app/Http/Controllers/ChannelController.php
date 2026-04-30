@@ -21,45 +21,59 @@ class ChannelController extends Controller
 {
     Auth::shouldUse('sanctum');
     $user = request()->user();
-    $freePlanId = Cache::rememberForever('system_free_plan_id', function() {
-        return SubscriptionPlan::where('name_en', 'Free Package')->value('id');
+    $freePlanId = '00000000-0000-0000-0000-000000000000';
+
+    $allChannels = Cache::remember('global_active_channels_list', 3600, function () {
+        return Channel::with(['category', 'plans:subscription_plans.id'])
+            ->where('is_active', true)
+            ->orderBy('number', 'asc')
+            ->get();
     });
 
-    $query = Channel::with('category')
-        ->where('is_active', true)
-        ->orderBy('number', 'asc');
+    $userPlanIdMap = array_flip(
+        array_merge($user ? $user->getActivePlanIds() : [], [$freePlanId])
+    );
 
-    if ($user) {
-        $query->with('plans:subscription_plans.id');
-    }
+   $accessibleIds = [];
 
-    $allChannels = $query->get();
-    $userActivePlanIds = $user ? $user->getActivePlanIds() : [];
-    $userActivePlanIds[] = $freePlanId; 
+   [$formattedChannels, $accessibleIds] = $allChannels->reduce(
+    function ($carry, $channel) use ($userPlanIdMap) {
+        [$formatted, $accessibleIds] = $carry;
 
-    $accessibleIds = $allChannels->filter(function ($channel) use ($userActivePlanIds) {
-      $requiredPlanIds = $channel->plans->pluck('id')->toArray();
-        return !empty(array_intersect($requiredPlanIds, $userActivePlanIds));
-    })->pluck('external_id')->values()->toArray();
+        $isAccessible = $channel->plans->contains(
+            fn($plan) => isset($userPlanIdMap[$plan->id])
+        );
 
-    $formattedChannels = $allChannels->map(function ($channel) {
-        return [
-            'uuid' => $channel->id,
-            'id' => $channel->external_id, 
-            'name' => $channel->name,   
-            'logo' => $channel->icon_url,
-            'number' => $channel->number,
-            'category_en' => $channel->category?->name_en ?? null,
-            'category_ka' => $channel->category?->name_ka ?? null,
-            'category_id'=>$channel->category?->id,
-            'is_free' => $channel->is_free,
+        if (!$channel->is_public && !$isAccessible) {
+            return $carry;
+        }
+
+        if ($isAccessible) {
+            $accessibleIds[] = $channel->external_id;
+        }
+
+        $formatted[] = [
+            'uuid'          => $channel->id,
+            'id'            => $channel->external_id,
+            'name'          => $channel->name,
+            'logo'          => $channel->icon_url,
+            'number'        => $channel->number,
+            'category_en'   => $channel->category?->name_en,
+            'category_ka'   => $channel->category?->name_ka,
+            'category_id'   => $channel->category?->id,
+            'is_free'       => $channel->is_free,
+            'is_accessible' => $isAccessible,
         ];
-    });
 
-    return response()->json([
-        'channels' => $formattedChannels,
-        'accessible_external_ids' => $accessibleIds
-    ]);
+        return [$formatted, $accessibleIds];
+    },
+    [[], []] 
+);
+
+return response()->json([
+    'channels'                => $formattedChannels,
+    'accessible_external_ids' => $accessibleIds,
+]);
 }
     public function getChannelPlans($id): JsonResponse
 {
