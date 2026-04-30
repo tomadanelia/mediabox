@@ -63,13 +63,16 @@ class AdminChannelController extends Controller{
 
     $channel->is_active = !$channel->is_active;
     $channel->save();
-    Cache::forget("plan_channels_formatted_*");
-    Cache::forget("channel_stream_{$channel->external_id}_*");
 
+    Cache::forget('global_active_channels_list');
+    foreach ($channel->plans as $plan) {
+        Cache::forget("plan_channels_{$plan->id}");
+    }
+    
     return response()->json([
         'message' => 'Channel ' . ($channel->is_active ? 'enabled' : 'disabled') . ' successfully.',
         'is_active' => $channel->is_active
-    ],200);
+    ], 200);
 }
     public function update(AdminChannelUpdateRequest $request, string $id): JsonResponse
     {
