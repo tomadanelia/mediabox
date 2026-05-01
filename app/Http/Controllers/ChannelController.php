@@ -10,6 +10,7 @@ use App\Services\SyncingService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Models\SubscriptionPlan;
+use Illuminate\Support\Facades\DB;
 class ChannelController extends Controller
 {
     public function __construct(
