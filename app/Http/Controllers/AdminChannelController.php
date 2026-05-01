@@ -57,38 +57,37 @@ class AdminChannelController extends Controller{
         'data' => $channel
     ], 201);
 }
-    public function toggleActive(Request $request, string $id): JsonResponse
+    // AdminChannelController.php — fix toggleActive and togglePublic
+
+public function toggleActive(Request $request, string $id): JsonResponse
 {
     $channel = Channel::findOrFail($id);
-
     $channel->is_active = !$channel->is_active;
     $channel->save();
 
     Cache::forget('global_active_channels_list');
-    foreach ($channel->plans as $plan) {
-        Cache::forget("plan_channels_{$plan->id}");
-    }
-    
+    Cache::forget('channel_plan_map');         
+    Cache::forget("channel_plans_{$channel->id}");
+
     return response()->json([
-        'message' => 'Channel ' . ($channel->is_active ? 'enabled' : 'disabled') . ' successfully.',
-        'is_active' => $channel->is_active
-    ], 200);
+        'message'   => 'Channel ' . ($channel->is_active ? 'enabled' : 'disabled') . ' successfully.',
+        'is_active' => $channel->is_active,
+    ]);
 }
-    public function togglePublic(Request $request, string $id): JsonResponse
+
+public function togglePublic(Request $request, string $id): JsonResponse
 {
     $channel = Channel::findOrFail($id);
-     $channel->is_public = !$channel->is_public;
+    $channel->is_public = !$channel->is_public;
     $channel->save();
 
     Cache::forget('global_active_channels_list');
-    foreach ($channel->plans as $plan) {
-        Cache::forget("plan_channels_{$plan->id}");
-    }
-    
+    Cache::forget('channel_plan_map');         
+
     return response()->json([
-        'message' => 'Channel ' . ($channel->is_public ? 'made public' : 'made private') . ' successfully.',
-        'is_public' => $channel->is_public
-    ], 200);
+        'message'   => 'Channel ' . ($channel->is_public ? 'made public' : 'made private') . ' successfully.',
+        'is_public' => $channel->is_public,
+    ]);
 }
     public function update(AdminChannelUpdateRequest $request, string $id): JsonResponse
     {

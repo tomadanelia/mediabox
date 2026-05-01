@@ -22,6 +22,7 @@ class SubscriptionPlanSeeder extends Seeder
                 'price' => 0.00,
                 'duration_days' => 36500,
                 'is_active' => true,
+                'is_default' => true,
             ]
         );
         SubscriptionPlan::updateOrCreate(

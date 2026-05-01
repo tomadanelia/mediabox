@@ -134,8 +134,25 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::delete('/{planId}', [AdminPlansController::class, 'deletePlan']);
         Route::post('/{planId}/channels', [AdminPlansController::class, 'addChannelsToPlan']);
         Route::delete('/{planId}/channels', [AdminPlansController::class, 'removeChannelsFromPlan']);
+        Route::post('/{planId}/bundles', [AdminPlansController::class, 'attachBundle']);
+        Route::delete('/{planId}/bundles', [AdminPlansController::class, 'detachBundle']);
         Route::get('/all', [AdminPlansController::class, 'allPlans']);
     });
+    Route::prefix('admin/bundles')->group(function () {
+        Route::get('/',                        [AdminBundleController::class, 'listBundles']);
+        Route::post('/',                       [AdminBundleController::class, 'createBundle']);
+        Route::get('/{bundleId}',              [AdminBundleController::class, 'showBundle']);
+        Route::delete('/{bundleId}',           [AdminBundleController::class, 'deleteBundle']);
+        Route::put('/{bundleId}/items/sync',   [AdminBundleController::class, 'syncItems']);
+        Route::post('/{bundleId}/items',       [AdminBundleController::class, 'addItem']);
+        Route::delete('/{bundleId}/items',     [AdminBundleController::class, 'removeItem']);
+});
+
+Route::prefix('admin/modules')->group(function () {
+        Route::get('/',                [AdminBundleController::class, 'listModules']);
+        Route::post('/',               [AdminBundleController::class, 'storeModule']);
+        Route::patch('/{moduleId}/toggle', [AdminBundleController::class, 'toggleModule']);
+});
      Route::prefix('discounts')->group(function () {
         Route::get('/', [AdminDiscountController::class, 'index']);          
         Route::post('/', [AdminDiscountController::class, 'store']);         

@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use App\Models\Channel;
+use App\Models\BundleItem;
+use \Illuminate\Support\Str;
+use App\Models\ServiceBundle;
 
 class AdminPlansController extends Controller
 {
@@ -109,16 +112,29 @@ class AdminPlansController extends Controller
 {
     $plan = SubscriptionPlan::findOrFail($planId);
 
-    $channels = $plan->channels()->select('channels.id', 'name', 'external_id', 'number')->get();
-    
-    if ($channels->isNotEmpty()) {
+    // Fix: check via bundle_items instead of old plans() relationship
+    $channelCount = DB::table('bundle_items')
+        ->join('plan_services', 'plan_services.bundle_id', '=', 'bundle_items.bundle_id')
+        ->where('plan_services.plan_id', $planId)
+        ->where('bundle_items.item_type', 1)
+        ->count();
+
+    if ($channelCount > 0) {
+        $channels = DB::table('bundle_items')
+            ->join('plan_services', 'plan_services.bundle_id', '=', 'bundle_items.bundle_id')
+            ->join('channels', 'channels.id', '=', 'bundle_items.item_id')
+            ->where('plan_services.plan_id', $planId)
+            ->where('bundle_items.item_type', 1)
+            ->select('channels.id', 'channels.name', 'channels.external_id', 'channels.number')
+            ->get();
+
         return response()->json([
-            'message' => 'Cannot delete plan: channels are still assigned to it.',
+            'message'    => 'Cannot delete plan: channels are still assigned to it.',
             'error_code' => 'PLAN_HAS_CHANNELS',
-            'items' => $channels->map(fn($c) => [
-                'id' => $c->id,
+            'items'      => $channels->map(fn($c) => [
+                'id'           => $c->id,
                 'display_name' => "({$c->number}) {$c->name}",
-                'external_id' => $c->external_id
+                'external_id'  => $c->external_id,
             ])
         ], 400);
     }
@@ -130,73 +146,90 @@ class AdminPlansController extends Controller
 
     if ($users->isNotEmpty()) {
         return response()->json([
-            'message' => 'Cannot delete plan: users are currently or were previously subscribed.',
+            'message'    => 'Cannot delete plan: users are currently or were previously subscribed.',
             'error_code' => 'PLAN_HAS_USERS',
-            'items' => $users->map(fn($u) => [
-                'id' => $u->id,
+            'items'      => $users->map(fn($u) => [
+                'id'           => $u->id,
                 'display_name' => $u->full_name ?? $u->username,
-                'numeric_id' => $u->numeric_id
+                'numeric_id'   => $u->numeric_id,
             ])
         ], 400);
     }
 
-    $plan->delete();
+    $plan->delete(); // cascade removes plan_services rows via FK
+    Cache::forget('channel_plan_map');
 
-    \Illuminate\Support\Facades\Cache::forget("plan_channels_{$planId}");
-    \Illuminate\Support\Facades\Cache::forget("plan_channels_formatted_{$planId}");
-
-    return response()->json([
-        'message' => 'Subscription plan deleted successfully'
-    ], 200);
+    return response()->json(['message' => 'Subscription plan deleted successfully'], 200);
 }
-    public function addChannelsToPlan(Request $request, string $planId)
-    {
-        $plan = SubscriptionPlan::findOrFail($planId);
-        $freePlanId = '00000000-0000-0000-0000-000000000000';
-        $validated = $request->validate([
-            'channel_ids' => 'required|array',
-            'channel_ids.*' => 'uuid|exists:channels,id',
-        ]);
 
-        $plan->channels()->syncWithoutDetaching($validated['channel_ids']);
-        $shouldBeFree = ($plan->id === $freePlanId);
-        Channel::whereIn('id', $validated['channel_ids'])->update([
-        'is_free' => $shouldBeFree
-        ]);
-        Cache::forget("plan_channels_{$planId}");
-        foreach($validated['channel_ids'] as $id) {
+public function removeChannelsFromPlan(Request $request, string $planId): JsonResponse
+{
+    $plan = SubscriptionPlan::findOrFail($planId);
+    $validated = $request->validate([
+        'channel_ids'   => 'required|array',
+        'channel_ids.*' => 'uuid|exists:channels,id',
+    ]);
+
+    $bundle = $plan->bundles()->where('type', 'tv')->first();
+
+    if ($bundle) {
+        BundleItem::where('bundle_id', $bundle->id)
+            ->where('item_type', 1)
+            ->whereIn('item_id', $validated['channel_ids'])
+            ->delete();
+    }
+
+    // Fix: removing from a plan never changes is_free
+    // is_free is set intentionally on channel create, not derived from plan membership
+
+    foreach ($validated['channel_ids'] as $id) {
         Cache::forget("channel_plans_{$id}");
     }
-        return response()->json([
-            'message' => 'Channels added to subscription plan successfully',
-            'data' => $plan->channels
-        ],200);
-    }
-    public function removeChannelsFromPlan(Request $request, string $planId)
-    {
-        $plan = SubscriptionPlan::findOrFail($planId);
 
-        $validated = $request->validate([
-            'channel_ids' => 'required|array',
-            'channel_ids.*' => 'uuid|exists:channels,id',
+    Cache::forget('global_active_channels_list');
+    Cache::forget('channel_plan_map');
+
+    return response()->json(['message' => 'Channels removed from plan bundle']);
+}
+    public function addChannelsToPlan(Request $request, string $planId)
+{
+    $plan = SubscriptionPlan::findOrFail($planId);
+
+    $validated = $request->validate([
+        'channel_ids' => 'required|array',
+        'channel_ids.*' => 'uuid|exists:channels,id',
+    ]);
+
+    $bundle = $plan->bundles()->where('type', 'tv')->first();
+
+    if (!$bundle) {
+        $bundle = ServiceBundle::create([
+            'slug' => 'tv_' . Str::slug($plan->name_en),
+            'name' => $plan->name_en . ' — TV',
+            'type' => 'tv',
         ]);
+        $plan->bundles()->attach($bundle->id);
+    }
 
-        $plan->channels()->detach($validated['channel_ids']);
-        $channelsWithoutPlans = Channel::whereIn('id', $validated['channel_ids'])
-        ->whereDoesntHave('plans')
-        ->pluck('id');
-        if ($channelsWithoutPlans->isNotEmpty()) {
-        Channel::whereIn('id', $channelsWithoutPlans)->update(['is_free' => true]);
+    foreach ($validated['channel_ids'] as $channelId) {
+        BundleItem::updateOrCreate([
+            'bundle_id' => $bundle->id,
+            'item_type' => 1, // TV
+            'item_id'   => $channelId,
+        ]);
     }
-        Cache::forget("plan_channels_{$planId}");
-        foreach($validated['channel_ids'] as $id) {
-            Cache::forget("channel_plans_{$id}");
-        }
-        return response()->json([
-            'message' => 'Channels removed from subscription plan successfully',
-            'data' => $plan->channels()->get()
-        ],200);
+
+    Channel::whereIn('id', $validated['channel_ids'])
+    ->update(['is_free' => (bool) $plan->is_default]);
+
+    Cache::forget('global_active_channels_list');
+    Cache::forget('channel_plan_map');
+    foreach ($validated['channel_ids'] as $id) {
+        Cache::forget("channel_plans_{$id}");
     }
+
+    return response()->json(['message' => 'Channels added to plan bundle successfully']);
+}
     public function grantPlanToUser(Request $request, string $userId)
 {
     $request->validate([
@@ -243,5 +276,34 @@ public function revokePlanFromUser(Request $request, string $userId)
         'message' => "Plan revoked from user successfully."
     ]);
 }
+public function attachBundle(Request $request, string $planId): JsonResponse
+{
+    $request->validate([
+        'bundle_id' => 'required|uuid|exists:service_bundles,id'
+    ]);
 
+    $plan = SubscriptionPlan::findOrFail($planId);
+    
+    // Using syncWithoutDetaching avoids duplicates
+    $plan->bundles()->syncWithoutDetaching([$request->bundle_id]);
+
+    Cache::forget('channel_plan_map');
+
+    return response()->json(['message' => 'Bundle successfully attached to plan']);
+}
+
+/**
+ * Detach a Bundle
+ */
+public function detachBundle(Request $request, string $planId): JsonResponse
+{
+    $request->validate(['bundle_id' => 'required|uuid']);
+    
+    $plan = SubscriptionPlan::findOrFail($planId);
+    $plan->bundles()->detach($request->bundle_id);
+
+    Cache::forget('channel_plan_map');
+
+    return response()->json(['message' => 'Bundle detached']);
+}
 }
