@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\HasUuid;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class SubscriptionPlan extends Model
 {
     use hasUuid;
@@ -25,10 +26,16 @@ class SubscriptionPlan extends Model
         'is_active'=>'boolean',
         'is_public'=>'boolean',
     ];
-     public function channels()
-    {
-        return $this->belongsToMany(Channel::class, 'channel_subscription_plan', 'plan_id', 'channel_id');
-    }
+    public function bundles(): BelongsToMany
+{
+    return $this->belongsToMany(
+        ServiceBundle::class,
+        'plan_services',
+        'plan_id',
+        'bundle_id'
+    );
+}
+
     public function users()
 {
     return $this->belongsToMany(

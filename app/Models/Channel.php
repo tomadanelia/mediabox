@@ -32,20 +32,36 @@ class Channel extends Model
         'view_count' => 'integer',
         'is_public' => 'boolean',
     ];
-    public function getRequiredPlanIds(): array
-    {
-         return Cache::remember("channel_plans_{$this->id}", 3600, function() {
-            return $this->plans()->pluck('subscription_plans.id')->toArray();
-        });
-    }
     public function category()
     {
         return $this->belongsTo(ChannelCategory::class, 'category_id');
     }
-    public function plans()
-    {
-        return $this->belongsToMany(SubscriptionPlan::class, 'channel_subscription_plan', 'channel_id', 'plan_id');
-    }
+
+public function plans()
+{
+    return $this->belongsToMany(
+        SubscriptionPlan::class,
+        'bundle_items',    
+        'item_id',         
+        'bundle_id'        
+    )
+    ->wherePivot('item_type', 1)
+    ->join('plan_services', 'plan_services.bundle_id', '=', 'bundle_items.bundle_id')
+    ->join('subscription_plans', 'subscription_plans.id', '=', 'plan_services.plan_id')
+    ->select('subscription_plans.*');
+}
+
+public function getRequiredPlanIds(): array
+{
+    return Cache::remember("channel_plans_{$this->id}", 3600, function () {
+        return DB::table('bundle_items')
+            ->where('bundle_items.item_type', 1)
+            ->where('bundle_items.item_id', $this->id)
+            ->join('plan_services', 'plan_services.bundle_id', '=', 'bundle_items.bundle_id')
+            ->pluck('plan_services.plan_id')
+            ->toArray();
+    });
+}
     public function viewers()
 {
     return $this->hasMany(UserWatchHistory::class);

@@ -20,78 +20,91 @@ class ChannelController extends Controller
     public function getChannelFacade(): JsonResponse
 {
     Auth::shouldUse('sanctum');
-    $user = request()->user();
+    $user    = request()->user();
     $freePlanId = '00000000-0000-0000-0000-000000000000';
 
     $allChannels = Cache::remember('global_active_channels_list', 3600, function () {
-        return Channel::with(['category', 'plans:subscription_plans.id'])
+        return Channel::with('category')
             ->where('is_active', true)
             ->orderBy('number', 'asc')
             ->get();
+    });
+
+    $channelPlanMap = Cache::remember('channel_plan_map', 3600, function () {
+        return DB::table('bundle_items')
+            ->where('item_type', 1)
+            ->join('plan_services', 'plan_services.bundle_id', '=', 'bundle_items.bundle_id')
+            ->select('bundle_items.item_id as channel_id', 'plan_services.plan_id')
+            ->get()
+            ->groupBy('channel_id')
+            ->map(fn($rows) => $rows->pluck('plan_id')->all());
     });
 
     $userPlanIdMap = array_flip(
         array_merge($user ? $user->getActivePlanIds() : [], [$freePlanId])
     );
 
-   $accessibleIds = [];
+    [$formattedChannels, $accessibleIds] = $allChannels->reduce(
+        function ($carry, $channel) use ($userPlanIdMap, $channelPlanMap) {
+            [$formatted, $accessibleIds] = $carry;
 
-   [$formattedChannels, $accessibleIds] = $allChannels->reduce(
-    function ($carry, $channel) use ($userPlanIdMap) {
-        [$formatted, $accessibleIds] = $carry;
+            $channelPlans = $channelPlanMap[$channel->id] ?? [];
+            $isAccessible = !empty(array_intersect_key(
+                array_flip($channelPlans),
+                $userPlanIdMap
+            ));
 
-        $isAccessible = $channel->plans->contains(
-            fn($plan) => isset($userPlanIdMap[$plan->id])
-        );
+            if (!$channel->is_public && !$isAccessible) {
+                return $carry;
+            }
 
-        if (!$channel->is_public && !$isAccessible) {
-            return $carry;
-        }
+            if ($isAccessible) {
+                $accessibleIds[] = $channel->external_id;
+            }
 
-        if ($isAccessible) {
-            $accessibleIds[] = $channel->external_id;
-        }
+            $formatted[] = [
+                'uuid'          => $channel->id,
+                'id'            => $channel->external_id,
+                'name'          => $channel->name,   
+                'logo'          => $channel->icon_url,
+                'number'        => $channel->number,
+                'category_en'   => $channel->category?->name_en,
+                'category_ka'   => $channel->category?->name_ka,
+                'category_id'   => $channel->category?->id,
+                'is_free'       => $channel->is_free,
+                'is_accessible' => $isAccessible,
+            ];
 
-        $formatted[] = [
-            'uuid'          => $channel->id,
-            'id'            => $channel->external_id,
-            'name'          => $channel->name,
-            'logo'          => $channel->icon_url,
-            'number'        => $channel->number,
-            'category_en'   => $channel->category?->name_en,
-            'category_ka'   => $channel->category?->name_ka,
-            'category_id'   => $channel->category?->id,
-            'is_free'       => $channel->is_free,
-            'is_accessible' => $isAccessible,
-        ];
-
-        return [$formatted, $accessibleIds];
-    },
-    [[], []] 
-);
-
-return response()->json([
-    'channels'                => $formattedChannels,
-    'accessible_external_ids' => $accessibleIds,
-]);
-}
-    public function getChannelPlans($id): JsonResponse
-{
-    $channel = Channel::where('external_id', $id)->firstOrFail();
-    $plans = $channel->plans()->where('is_active', true)->get([
-        'subscription_plans.id', 
-        'name_ka', 
-        'name_en', 
-        'price', 
-        'duration_days'
-    ]);
+            return [$formatted, $accessibleIds];
+        },
+        [[], []]
+    );
 
     return response()->json([
-        'external_id' => $id,
-        'channel_name_ka' => $channel->name_ka,
-        'channel_name_en' => $channel->name_en,
-        'is_free' => $channel->is_free,
-        'required_plans' => $plans
+        'channels'                => $formattedChannels,
+        'accessible_external_ids' => $accessibleIds,
+    ]);
+}
+
+public function getChannelPlans($id): JsonResponse
+{
+    $channel = Channel::where('external_id', $id)->firstOrFail();
+
+    // Direct DB query — no broken relationship needed
+    $plans = DB::table('subscription_plans')
+        ->join('plan_services', 'plan_services.plan_id', '=', 'subscription_plans.id')
+        ->join('bundle_items', 'bundle_items.bundle_id', '=', 'plan_services.bundle_id')
+        ->where('bundle_items.item_type', 1)
+        ->where('bundle_items.item_id', $channel->id)
+        ->where('subscription_plans.is_active', true)
+        ->select('subscription_plans.id', 'name_ka', 'name_en', 'price', 'duration_days')
+        ->get();
+
+    return response()->json([
+        'external_id'     => $id,
+        'channel_name'    => $channel->name,   
+        'is_free'         => $channel->is_free,
+        'required_plans'  => $plans,
     ]);
 }
     
