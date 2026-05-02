@@ -133,8 +133,6 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::post('/{planId}/disable', [AdminPlansController::class, 'disablePlan']);
         Route::post('/{planId}/enable', [AdminPlansController::class, 'enablePlan']);
         Route::delete('/{planId}', [AdminPlansController::class, 'deletePlan']);
-        Route::post('/{planId}/channels', [AdminPlansController::class, 'addChannelsToPlan']);
-        Route::delete('/{planId}/channels', [AdminPlansController::class, 'removeChannelsFromPlan']);
         Route::post('/{planId}/bundles', [AdminPlansController::class, 'attachBundle']);
         Route::delete('/{planId}/bundles', [AdminPlansController::class, 'detachBundle']);
         Route::get('/all', [AdminPlansController::class, 'allPlans']);
