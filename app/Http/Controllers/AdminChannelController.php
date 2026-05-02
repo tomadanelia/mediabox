@@ -82,7 +82,9 @@ public function togglePublic(Request $request, string $id): JsonResponse
     $channel->save();
 
     Cache::forget('global_active_channels_list');
-    Cache::forget('channel_plan_map');         
+    Cache::forget('channel_plan_map');    
+    Cache::forget("channel_plans_{$channel->id}");
+     
 
     return response()->json([
         'message'   => 'Channel ' . ($channel->is_public ? 'made public' : 'made private') . ' successfully.',
@@ -90,25 +92,28 @@ public function togglePublic(Request $request, string $id): JsonResponse
     ]);
 }
     public function update(AdminChannelUpdateRequest $request, string $id): JsonResponse
-    {
-        $channel = Channel::findOrFail($id);
+{
+    $channel = Channel::findOrFail($id);
+    $channel->update($request->validated());
+    Cache::forget('global_active_channels_list');
+    Cache::forget('channel_plan_map');
+    Cache::forget("channel_plans_{$channel->id}");
 
-        $channel->update($request->validated());
-        foreach ($channel->plans as $plan) {
-            Cache::forget("plan_channels_{$plan->id}");
-            Cache::forget("plan_channels_formatted_{$plan->id}");
-        }
-
-        return response()->json([
-            'message' => 'Channel updated successfully',
-            'data' => [
-                'id' => $channel->id,
-                'name' => $channel->name,
-                'icon_url' => $channel->icon_url,
-                'is_active' => $channel->is_active,
-            ]
-        ]);
+    // i use $channel->plans relationship to find which plan caches to bust
+    foreach ($channel->plans as $plan) {
+        Cache::forget("plan_channels_{$plan->id}");
     }
+
+    return response()->json([
+        'message' => 'Channel updated successfully',
+        'data' => [
+            'id' => $channel->id,
+            'name' => $channel->name,
+            'icon_url' => $channel->icon_url,
+            'is_active' => $channel->is_active,
+        ]
+    ]);
+}
 
 public function sync(SyncChannelsService $syncService): JsonResponse
 {
