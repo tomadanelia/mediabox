@@ -113,7 +113,7 @@ public function togglePublic(Request $request, string $id): JsonResponse
 public function sync(SyncChannelsService $syncService): JsonResponse
 {
      try {
-        $stats = $syncService->migrateFromDump($syncService);
+        $stats = $syncService->migrateFromDump();
 
         return response()->json([
             'message' => "Successfully synchronized all data from the legacy dump.",

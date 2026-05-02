@@ -99,19 +99,19 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
     Route::post('/logos', [SettingController::class, 'updateLogos']);
     Route::post('/settings/tv-price', [SettingController::class, 'updateExtraTvPrice']);
     Route::prefix('channels')->group(function () {
-    Route::post('/', [AdminChannelController::class, 'store']); 
-    Route::get('/', [AdminChannelController::class, 'index']);
-    Route::patch('/{id}/toggle-active', [AdminChannelController::class, 'toggleActive']);
-    Route::patch('/channels/{id}/toggle-public', [AdminChannelController::class, 'togglePublic']);
-    Route::put('/{id}', [AdminChannelController::class, 'update']); 
-    Route::post('/sync', [AdminChannelController::class, 'sync']); 
-     Route::prefix('{external_id}')->group(function () {
-      Route::get('urls', [AdminChannelUrlController::class, 'index']);
-      Route::post('urls', [AdminChannelUrlController::class, 'storeLive']);
-      Route::delete('urls/{id}', [AdminChannelUrlController::class, 'destroyLive']);
+        Route::post('/', [AdminChannelController::class, 'store']); 
+        Route::get('/', [AdminChannelController::class, 'index']);
+        Route::patch('/{id}/toggle-active', [AdminChannelController::class, 'toggleActive']);
+        Route::patch('/{id}/toggle-public', [AdminChannelController::class, 'togglePublic']);
+        Route::put('/{id}', [AdminChannelController::class, 'update']); 
+        Route::post('/sync', [AdminChannelController::class, 'sync']); 
+        Route::prefix('{external_id}')->group(function () {
+        Route::get('urls', [AdminChannelUrlController::class, 'index']);
+        Route::post('urls', [AdminChannelUrlController::class, 'storeLive']);
+        Route::delete('urls/{id}', [AdminChannelUrlController::class, 'destroyLive']);
 
-      Route::post('archive-urls', [AdminChannelUrlController::class, 'storeArchive']);
-      Route::delete('archive-urls/{id}', [AdminChannelUrlController::class, 'destroyArchive']);
+        Route::post('archive-urls', [AdminChannelUrlController::class, 'storeArchive']);
+        Route::delete('archive-urls/{id}', [AdminChannelUrlController::class, 'destroyArchive']);
     });
     });
     Route::get('/users', [AdminCategoryController::class, 'users']);

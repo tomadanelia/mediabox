@@ -14,7 +14,7 @@ use App\Services\SyncingService;
 class SyncChannelsService
 {
     public function __construct(protected SyncingService $syncingService) {}
-    public function migrateFromDump(SyncChannelsService $syncService): array
+    public function migrateFromDump(): array
     {
         $filePath = database_path('legacy_dump.sql');
         $imageBaseUrl = 'https://img.mediabox.ge/';
@@ -40,7 +40,7 @@ class SyncChannelsService
             ]
             );
 
-            $syncService->assignDefaultPlans($channel, (bool) $item->FREE);
+            $this->assignDefaultPlans($channel, (bool) $item->FREE);
         }
 
         $legacyUrls = DB::table('legacy_channel_urls')->where('CHANNEL_URL', '!=', '')->get();
