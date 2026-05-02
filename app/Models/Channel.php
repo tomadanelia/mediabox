@@ -8,6 +8,7 @@ use App\Models\ChannelCategory;
 use Illuminate\Support\Facades\Cache;
 use App\Models\SubscriptionPlan;
 use App\Models\UserWatchHistory;
+use Illuminate\Support\Facades\DB;
 class Channel extends Model
 {
     use HasUuid;
