@@ -43,6 +43,47 @@ class AdminBundleController extends Controller
 
         return response()->json($bundle, 201);
     }
+public function update(Request $request, string $id): JsonResponse
+{
+    $bundle = ServiceBundle::findOrFail($id);
+
+    $validated = $request->validate([
+        'name'      => 'sometimes|string|max:255',
+        'slug'      => 'sometimes|string|unique:service_bundles,slug,' . $id,
+        'type'      => 'sometimes|in:tv,radio,module',
+        'is_active' => 'sometimes|boolean'
+    ]);
+
+    $bundle->update($validated);
+
+    Cache::forget('global_active_channels_list');
+    Cache::forget('channel_plan_map');
+
+    return response()->json([
+        'message' => 'Bundle updated successfully',
+        'data' => $bundle
+    ]);
+}
+
+/**
+ * Delete a bundle
+ */
+public function destroy(string $id): JsonResponse
+{
+    $bundle = ServiceBundle::findOrFail($id);
+
+    if ($bundle->plans()->count() > 0) {
+        return response()->json([
+            'message' => 'Cannot delete bundle: it is currently attached to one or more subscription plans.'
+        ], 400);
+    }
+
+    $bundle->delete();
+
+    Cache::forget('channel_plan_map');
+
+    return response()->json(['message' => 'Bundle deleted successfully']);
+}
 
     public function deleteBundle(string $bundleId): JsonResponse
     {
@@ -179,4 +220,5 @@ class AdminBundleController extends Controller
         Cache::forget('global_active_channels_list');
         Cache::forget('channel_plan_map');
     }
+
 }

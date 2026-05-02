@@ -23,6 +23,7 @@ use App\Http\Controllers\AdminNotificationController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\StatsController;
 use App\Http\Controllers\AdminChannelUrlController;
+use App\Http\Controllers\AdminBundleController;
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/categories', [ChannelController::class, 'getCategories']);
@@ -138,9 +139,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::delete('/{planId}/bundles', [AdminPlansController::class, 'detachBundle']);
         Route::get('/all', [AdminPlansController::class, 'allPlans']);
     });
-    Route::prefix('admin/bundles')->group(function () {
+    Route::prefix('/bundles')->group(function () {
         Route::get('/',                        [AdminBundleController::class, 'listBundles']);
         Route::post('/',                       [AdminBundleController::class, 'createBundle']);
+        Route::put('/{id}',                    [AdminBundleController::class, 'update']);
+        Route::delete('/{id}',                 [AdminBundleController::class, 'destroy']);
         Route::get('/{bundleId}',              [AdminBundleController::class, 'showBundle']);
         Route::delete('/{bundleId}',           [AdminBundleController::class, 'deleteBundle']);
         Route::put('/{bundleId}/items/sync',   [AdminBundleController::class, 'syncItems']);

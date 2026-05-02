@@ -11,7 +11,7 @@ use App\Models\Channel;
 use App\Models\BundleItem;
 use \Illuminate\Support\Str;
 use App\Models\ServiceBundle;
-
+use Illuminate\Support\Facades\DB
 class AdminPlansController extends Controller
 {
     public function allPlans(): JsonResponse
