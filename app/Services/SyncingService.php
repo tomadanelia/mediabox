@@ -24,7 +24,7 @@ class SyncingService
     {
         $cacheKey = "channel_stream_{$externalId}_{$clientIp}";
 
-        return Cache::remember($cacheKey, 300, function () use ($externalId, $clientIp) {
+        return Cache::remember($cacheKey, 60, function () use ($externalId, $clientIp) {
                 $local = $this->getStreamUrlLocal($externalId, $clientIp);
                 if ($local) return $local;
                 return null;
@@ -38,7 +38,7 @@ class SyncingService
     {
         $cacheKey = "channel_archive_{$externalId}_{$startEpoch}_{$clientIp}";
 
-        return Cache::remember($cacheKey, 300, function () use ($externalId, $startEpoch, $clientIp) {
+        return Cache::remember($cacheKey, 60, function () use ($externalId, $startEpoch, $clientIp) {
                 $local = $this->getArchiveUrlLocal($externalId, $startEpoch, $clientIp);
                 if ($local) return $local;
                 return null;

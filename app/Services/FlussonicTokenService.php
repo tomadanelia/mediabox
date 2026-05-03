@@ -4,6 +4,13 @@ namespace App\Services;
 use GeoIp2\Database\Reader;
 class FlussonicTokenService
 {
+       private function getLifetime(string $type): int
+    {
+        return (int) Cache::remember("setting_{$type}", 259200, function () use ($type) {
+            $default = ($type === 'live') ? 14400 : 3600; // 4h live, 1h archive
+            return SiteSetting::where('key', "flussonic_{$type}_lifetime")->value('value') ?: $default;
+        });
+    }
     /**
      * Called directly when you have stream + server already parsed.
      */
@@ -14,8 +21,8 @@ class FlussonicTokenService
             ? config('services.flussonic.key_special')
             : config('services.flussonic.key_default');
 
-        $lifetime  = 4 * 60 * 60;
-        $desync    = 300;
+        $lifetime  = $this->getLifetime('live');
+        $desync    = 60;
         $starttime = time() - $desync;
         $endtime   = $starttime + $desync + $lifetime;
 
@@ -91,10 +98,10 @@ class FlussonicTokenService
     public function generateArchiveTokenData(string $stream, string $clientIp, int $startEpoch): array
 {
     $key      = config('services.flussonic.key_default');
-    $lifetime = 1 * 3600;
+    $lifetime = $this->getLifetime('archive');
     $cdn      = config('services.flussonic.cdn'); // https://cdn.streamer.mediabox.ge
 
-    $desync    = 300;
+    $desync    = 60;
     $starttime = time() - $desync;
     $endtime   = $starttime + $lifetime; // no $desync added here unlike live
 

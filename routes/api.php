@@ -24,6 +24,8 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\StatsController;
 use App\Http\Controllers\AdminChannelUrlController;
 use App\Http\Controllers\AdminBundleController;
+use App\Http\Controllers\TokenTtlController;
+
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/categories', [ChannelController::class, 'getCategories']);
@@ -149,7 +151,7 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::delete('/{bundleId}/items',     [AdminBundleController::class, 'removeItem']);
 });
 
-Route::prefix('admin/modules')->group(function () {
+Route::prefix('/modules')->group(function () {
         Route::get('/',                [AdminBundleController::class, 'listModules']);
         Route::post('/',               [AdminBundleController::class, 'storeModule']);
         Route::patch('/{moduleId}/toggle', [AdminBundleController::class, 'toggleModule']);
@@ -167,6 +169,10 @@ Route::prefix('admin/modules')->group(function () {
    
     Route::patch('/users/{userId}/role', [AdminUserController::class, 'updateRole']);
     Route::post('/settings/homepage', [SettingController::class, 'updateHomepageSettings']);
+    Route::prefix('admin/settings/tokens')->group(function () {
+        Route::get('/', [TokenTtlController::class, 'getTokenSettings']);
+        Route::post('/', [TokenTtlController::class, 'updateTokenSettings']);
+});
 });
 Route::post('/tv/init', [TvPairingController::class, 'initialize']);
 Route::post('/tv/claim', [TvPairingController::class, 'claim'])
