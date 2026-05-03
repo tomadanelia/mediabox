@@ -2,6 +2,8 @@
 
 namespace App\Services;
 use GeoIp2\Database\Reader;
+use Illuminate\Support\Facades\Cache;
+use App\Models\SiteSetting;
 class FlussonicTokenService
 {
        private function getLifetime(string $type): int
