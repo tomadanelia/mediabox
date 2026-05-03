@@ -219,7 +219,7 @@ public function attachBundle(Request $request, string $planId): JsonResponse
     $plan->bundles()->syncWithoutDetaching([$request->bundle_id]);
 
     Cache::forget('channel_plan_map');
-
+    Cache::forget("plan_content_details_{$planId}");
     return response()->json(['message' => 'Bundle successfully attached to plan']);
 }
 
@@ -234,6 +234,7 @@ public function detachBundle(Request $request, string $planId): JsonResponse
     $plan->bundles()->detach($request->bundle_id);
 
     Cache::forget('channel_plan_map');
+    Cache::forget("plan_content_details_{$planId}");
 
     return response()->json(['message' => 'Bundle detached']);
 }
