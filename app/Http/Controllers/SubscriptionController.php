@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use App\Models\CachedPersonalAccessToken;
 use App\Models\PaymentTransaction;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 class SubscriptionController extends Controller
 {
@@ -83,16 +84,43 @@ class SubscriptionController extends Controller
         ], 422);
     }
 }
-       public function getChannelsForPlan(string $planId)
+       public function getChannelsForPlan(string $planId): JsonResponse
 {
-    $channels = Cache::remember("plan_channels_{$planId}", 120, function () use ($planId) {
+    $data = Cache::remember("plan_content_details_{$planId}", 120, function () use ($planId) {
         $plan = SubscriptionPlan::findOrFail($planId);
-        return $plan->channels()->get();
+
+        $bundles = $plan->bundles()->where('is_active', true)->get();
+
+        return $bundles->map(function ($bundle) {
+            $channels = DB::table('bundle_items')
+                ->join('channels', 'channels.id', '=', 'bundle_items.item_id')
+                ->where('bundle_items.bundle_id', $bundle->id)
+                ->where('bundle_items.item_type', 1)
+                ->select('channels.id', 'channels.name', 'channels.number', 'channels.icon_url', 'channels.external_id')
+                ->get();
+
+            $radios = DB::table('bundle_items')
+                ->join('radio_channels', 'radio_channels.id', '=', 'bundle_items.item_id')
+                ->where('bundle_items.bundle_id', $bundle->id)
+                ->where('bundle_items.item_type', 2)
+                ->select('radio_channels.id', 'radio_channels.name', 'radio_channels.icon_url')
+                ->get();
+
+            return [
+                'bundle_id'   => $bundle->id,
+                'bundle_name' => $bundle->name,
+                'bundle_type' => $bundle->type,
+                'items'       => [
+                    'channels' => $channels,
+                    'radios'   => $radios
+                ]
+            ];
+        });
     });
 
     return response()->json([
-        'message' => 'Channels retrieved successfully',
-        'channels' => $channels
+        'plan_id' => $planId,
+        'bundles' => $data
     ], 200);
 }
 public function upgradeTvLimit(Request $request): JsonResponse
