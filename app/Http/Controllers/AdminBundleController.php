@@ -22,13 +22,47 @@ class AdminBundleController extends Controller
     }
 
     public function showBundle(string $bundleId): JsonResponse
-    {
-        $bundle = ServiceBundle::with(['items', 'plans:subscription_plans.id,name_en,name_ka'])
-            ->withCount('items')
-            ->findOrFail($bundleId);
+{
+    $bundle = ServiceBundle::with(['plans:subscription_plans.id,name_en,name_ka'])
+        ->withCount('items')
+        ->findOrFail($bundleId);
 
-        return response()->json($bundle);
-    }
+    $channels = DB::table('bundle_items')
+        ->join('channels', 'channels.id', '=', 'bundle_items.item_id')
+        ->where('bundle_items.bundle_id', $bundleId)
+        ->where('bundle_items.item_type', 1)
+        ->select('channels.id', 'channels.name', 'channels.number', 'channels.icon_url', 'channels.external_id', 'channels.is_active')
+        ->get();
+
+    $radioChannels = DB::table('bundle_items')
+        ->join('radio_channels', 'radio_channels.id', '=', 'bundle_items.item_id')
+        ->where('bundle_items.bundle_id', $bundleId)
+        ->where('bundle_items.item_type', 2)
+        ->select('radio_channels.id', 'radio_channels.name', 'radio_channels.icon_url', 'radio_channels.is_active')
+        ->get();
+
+    $modules = DB::table('bundle_items')
+        ->join('app_modules', 'app_modules.id', '=', 'bundle_items.item_id')
+        ->where('bundle_items.bundle_id', $bundleId)
+        ->where('bundle_items.item_type', 3)
+        ->select('app_modules.id', 'app_modules.name', 'app_modules.slug', 'app_modules.is_active')
+        ->get();
+
+    return response()->json([
+        'id'          => $bundle->id,
+        'slug'        => $bundle->slug,
+        'name'        => $bundle->name,
+        'type'        => $bundle->type,
+        'is_active'   => $bundle->is_active,
+        'items_count' => $bundle->items_count,
+        'plans'       => $bundle->plans,
+        'items' => [
+            'channels'       => $channels,
+            'radio_channels' => $radioChannels,
+            'modules'        => $modules,
+        ]
+    ]);
+}
 
     public function createBundle(Request $request): JsonResponse
     {
