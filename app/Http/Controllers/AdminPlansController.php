@@ -294,14 +294,38 @@ if ($plan->is_default) {
 public function detachBundle(Request $request, string $planId): JsonResponse
 {
     $request->validate(['bundle_id' => 'required|uuid']);
-    
+
     $plan = SubscriptionPlan::findOrFail($planId);
     $plan->bundles()->detach($request->bundle_id);
+    if ($plan->is_default) {
+        $detachedItems = BundleItem::where('bundle_id', $request->bundle_id)
+            ->whereIn('item_type', [1, 2])
+            ->get();
+
+        foreach ($detachedItems as $item) {
+            $stillFree = DB::table('bundle_items')
+                ->join('plan_services', 'plan_services.bundle_id', '=', 'bundle_items.bundle_id')
+                ->join('subscription_plans', 'plan_services.plan_id', '=', 'subscription_plans.id')
+                ->where('bundle_items.item_id', $item->item_id)
+                ->where('subscription_plans.is_default', true)
+                ->where('subscription_plans.is_active', true)
+                ->exists();
+
+            if (!$stillFree) {
+                if ($item->item_type === 1) {
+                    Channel::where('id', $item->item_id)->update(['is_free' => false]);
+                } elseif ($item->item_type === 2) {
+                    RadioChannel::where('id', $item->item_id)->update(['is_free' => false]);
+                }
+            }
+        }
+    }
 
     Cache::forget('channel_plan_map');
     Cache::forget("plan_content_details_{$planId}");
-    Cache::forget('global_active_radio_list'); 
-    Cache::forget('radio_plan_map');          
+    Cache::forget('global_active_radio_list');
+    Cache::forget('radio_plan_map');
+
     return response()->json(['message' => 'Bundle detached']);
 }
 }

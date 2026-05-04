@@ -246,7 +246,24 @@ public function destroy(string $id): JsonResponse
         Channel::where('id', $request->item_id)->update(['is_free' => true]);
     } elseif ($request->item_type === 2) {
         RadioChannel::where('id', $request->item_id)->update(['is_free' => true]);
+    }} elseif ($targetHasPaid) {
+    $stillFree = DB::table('bundle_items')
+        ->join('plan_services', 'plan_services.bundle_id', '=', 'bundle_items.bundle_id')
+        ->join('subscription_plans', 'plan_services.plan_id', '=', 'subscription_plans.id')
+        ->where('bundle_items.item_id', $request->item_id)
+        ->where('bundle_items.bundle_id', '!=', $bundleId)
+        ->where('subscription_plans.is_default', true)
+        ->where('subscription_plans.is_active', true)
+        ->exists();
+
+    if (!$stillFree) {
+        if ($request->item_type === 1) {
+            Channel::where('id', $request->item_id)->update(['is_free' => false]);
+        } elseif ($request->item_type === 2) {
+            RadioChannel::where('id', $request->item_id)->update(['is_free' => false]);
+        }
     }
+
 }
         $this->clearCaches();
 
@@ -254,23 +271,48 @@ public function destroy(string $id): JsonResponse
     }
 
     public function removeItem(Request $request, string $bundleId): JsonResponse
-    {
-        $bundle = ServiceBundle::findOrFail($bundleId);
+{
+    $bundle = ServiceBundle::findOrFail($bundleId);
 
-        $request->validate([
-            'item_id'   => 'required|uuid',
-            'item_type' => 'required|integer|in:1,2,3',
-        ]);
+    $request->validate([
+        'item_id'   => 'required|uuid',
+        'item_type' => 'required|integer|in:1,2,3',
+    ]);
 
-        BundleItem::where('bundle_id', $bundle->id)
-            ->where('item_type', $request->item_type)
-            ->where('item_id', $request->item_id)
-            ->delete();
+    BundleItem::where('bundle_id', $bundle->id)
+        ->where('item_type', $request->item_type)
+        ->where('item_id', $request->item_id)
+        ->delete();
 
-        $this->clearCaches();
+    $wasFreBundle = DB::table('plan_services')
+        ->join('subscription_plans', 'plan_services.plan_id', '=', 'subscription_plans.id')
+        ->where('plan_services.bundle_id', $bundleId)
+        ->where('subscription_plans.is_default', true)
+        ->where('subscription_plans.is_active', true)
+        ->exists();
 
-        return response()->json(['message' => 'Item removed from bundle']);
+    if ($wasFreBundle) {
+        $stillFree = DB::table('bundle_items')
+            ->join('plan_services', 'plan_services.bundle_id', '=', 'bundle_items.bundle_id')
+            ->join('subscription_plans', 'plan_services.plan_id', '=', 'subscription_plans.id')
+            ->where('bundle_items.item_id', $request->item_id)
+            ->where('subscription_plans.is_default', true)
+            ->where('subscription_plans.is_active', true)
+            ->exists();
+
+        if (!$stillFree) {
+            if ($request->item_type === 1) {
+                Channel::where('id', $request->item_id)->update(['is_free' => false]);
+            } elseif ($request->item_type === 2) {
+                RadioChannel::where('id', $request->item_id)->update(['is_free' => false]);
+            }
+        }
     }
+
+    $this->clearCaches();
+
+    return response()->json(['message' => 'Item removed from bundle']);
+}
 
     public function listModules(): JsonResponse
     {

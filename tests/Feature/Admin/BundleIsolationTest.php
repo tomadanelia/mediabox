@@ -150,3 +150,77 @@ it('successfully removes an item from a bundle', function () {
 
     expect(BundleItem::count())->toBe(0);
 });
+/**
+ * IS_FREE RESET LOGIC TESTS
+ */
+
+it('sets is_free to false when a bundle is detached from the Free plan', function () {
+    BundleItem::create(['bundle_id' => $this->bundleA->id, 'item_type' => 1, 'item_id' => $this->channel->id]);
+    $this->freePlan->bundles()->attach($this->bundleA->id);
+    
+    $this->channel->update(['is_free' => true]);
+
+    actingAs($this->admin)
+        ->deleteJson("/api/admin/plans/{$this->freePlan->id}/bundles", [
+            'bundle_id' => $this->bundleA->id
+        ])
+        ->assertSuccessful();
+
+    expect($this->channel->fresh()->is_free)->toBeFalse();
+});
+
+it('sets is_free to false when an item is removed from a Free bundle', function () {
+    $this->freePlan->bundles()->attach($this->bundleA->id);
+    BundleItem::create(['bundle_id' => $this->bundleA->id, 'item_type' => 1, 'item_id' => $this->channel->id]);
+    $this->channel->update(['is_free' => true]);
+
+    actingAs($this->admin)
+        ->deleteJson("/api/admin/bundles/{$this->bundleA->id}/items", [
+            'item_id' => $this->channel->id,
+            'item_type' => 1
+        ])
+        ->assertSuccessful();
+
+    expect($this->channel->fresh()->is_free)->toBeFalse();
+});
+
+it('keeps is_free as true if the item exists in another Free bundle', function () {
+    $this->freePlan->bundles()->attach($this->bundleA->id);
+    $this->freePlan->bundles()->attach($this->bundleB->id);
+    
+    BundleItem::create(['bundle_id' => $this->bundleA->id, 'item_type' => 1, 'item_id' => $this->channel->id]);
+    BundleItem::create(['bundle_id' => $this->bundleB->id, 'item_type' => 1, 'item_id' => $this->channel->id]);
+    
+    $this->channel->update(['is_free' => true]);
+
+    actingAs($this->admin)
+        ->deleteJson("/api/admin/bundles/{$this->bundleA->id}/items", [
+            'item_id' => $this->channel->id,
+            'item_type' => 1
+        ])
+        ->assertSuccessful();
+
+    expect($this->channel->fresh()->is_free)->toBeTrue();
+
+    actingAs($this->admin)
+        ->deleteJson("/api/admin/plans/{$this->freePlan->id}/bundles", [
+            'bundle_id' => $this->bundleB->id
+        ])
+        ->assertSuccessful();
+
+    expect($this->channel->fresh()->is_free)->toBeFalse();
+});
+
+it('handles is_free for RadioChannels identically to TV Channels', function () {
+    $this->freePlan->bundles()->attach($this->bundleA->id);
+    BundleItem::create(['bundle_id' => $this->bundleA->id, 'item_type' => 2, 'item_id' => $this->radio->id]);
+    $this->radio->update(['is_free' => true]);
+
+    actingAs($this->admin)
+        ->deleteJson("/api/admin/plans/{$this->freePlan->id}/bundles", [
+            'bundle_id' => $this->bundleA->id
+        ])
+        ->assertSuccessful();
+
+    expect($this->radio->fresh()->is_free)->toBeFalse();
+});
