@@ -16,6 +16,11 @@ class RadioChannel extends Model
     {
         return $this->belongsToMany(SubscriptionPlan::class, 'radio_subscription_plan', 'radio_id', 'plan_id');
     }
+     protected $casts = [
+        'is_active' => 'boolean',
+        'is_free'   => 'boolean',
+        'is_public' => 'boolean',
+    ];
 
     public function getRequiredPlanIds(): array
     {
