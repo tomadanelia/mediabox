@@ -11,6 +11,7 @@ use App\Models\Channel;
 use App\Models\BundleItem;
 use \Illuminate\Support\Str;
 use App\Models\ServiceBundle;
+use App\Models\RadioChannel;
 use Illuminate\Support\Facades\DB;
 class AdminPlansController extends Controller
 {
@@ -223,7 +224,6 @@ public function attachBundle(Request $request, string $planId): JsonResponse
        $itemConflicts = DB::table('bundle_items as bi_other')
     ->join('plan_services', 'plan_services.bundle_id', '=', 'bi_other.bundle_id')
     ->join('subscription_plans as sp', 'plan_services.plan_id', '=', 'sp.id')
-    ->where('bi_other.bundle_id', '!=', $request->bundle_id)
     ->where('sp.is_active', true)
     ->whereIn('bi_other.item_id', $itemIds)      
     ->whereIn('bi_other.item_type', $itemTypes)  
