@@ -218,6 +218,8 @@ public function attachBundle(Request $request, string $planId): JsonResponse
     $bundleItems = BundleItem::where('bundle_id', $request->bundle_id)->get();
 
     if ($bundleItems->isNotEmpty()) {
+        $itemIds = $bundleItems->pluck('item_id')->toArray();
+        $itemTypes = $bundleItems->pluck('item_type')->toArray();
        $itemConflicts = DB::table('bundle_items as bi_other')
     ->join('plan_services', 'plan_services.bundle_id', '=', 'bi_other.bundle_id')
     ->join('subscription_plans as sp', 'plan_services.plan_id', '=', 'sp.id')
