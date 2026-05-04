@@ -227,7 +227,7 @@ public function attachBundle(Request $request, string $planId): JsonResponse
     ->where('sp.is_active', true)
     ->whereIn('bi_other.item_id', $itemIds)      
     ->whereIn('bi_other.item_type', $itemTypes)  
-    ->select('bi_other.item_id', 'bi_other.item_type', 'sp.id as plan_id', 'sp.name_en', 'sp.is_default')
+    ->select('bi_other.item_id', 'bi_other.item_type', 'sp.id as plan_id', 'sp.name_ka', 'sp.is_default')
     ->get()
     ->filter(function ($row) use ($bundleItems) {
         return $bundleItems->contains(function ($item) use ($row) {
