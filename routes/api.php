@@ -169,7 +169,7 @@ Route::prefix('/modules')->group(function () {
    
     Route::patch('/users/{userId}/role', [AdminUserController::class, 'updateRole']);
     Route::post('/settings/homepage', [SettingController::class, 'updateHomepageSettings']);
-    Route::prefix('admin/settings/tokens')->group(function () {
+    Route::prefix('/settings/tokens')->group(function () {
         Route::get('/', [TokenTtlController::class, 'getTokenSettings']);
         Route::post('/', [TokenTtlController::class, 'updateTokenSettings']);
 });
