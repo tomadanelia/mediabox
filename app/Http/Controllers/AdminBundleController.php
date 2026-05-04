@@ -8,7 +8,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
-
+use App\Models\Channel;
+use App\Models\RadioChannel;
 
 class AdminBundleController extends Controller
 {
@@ -92,7 +93,8 @@ public function update(Request $request, string $id): JsonResponse
 
     Cache::forget('global_active_channels_list');
     Cache::forget('channel_plan_map');
-
+    Cache::forget('global_active_radio_list'); 
+    Cache::forget('radio_plan_map');           
     return response()->json([
         'message' => 'Bundle updated successfully',
         'data' => $bundle
@@ -178,7 +180,6 @@ public function destroy(string $id): JsonResponse
         return response()->json(['message' => 'Bundle items synchronized successfully']);
     }
 
-    // Add single item without wiping the whole bundle
     public function addItem(Request $request, string $bundleId): JsonResponse
     {
         $bundle = ServiceBundle::findOrFail($bundleId);
@@ -194,13 +195,59 @@ public function destroy(string $id): JsonResponse
         if (!DB::table($table)->where('id', $request->item_id)->exists()) {
             return response()->json(['message' => "Item not found in {$table}."], 422);
         }
+        $targetIsDefault = DB::table('plan_services')
+        ->join('subscription_plans', 'plan_services.plan_id', '=', 'subscription_plans.id')
+        ->where('plan_services.bundle_id', $bundleId)
+        ->where('subscription_plans.is_active', true)
+        ->pluck('subscription_plans.is_default');
+        $targetHasFree = $targetIsDefault->contains(true);
+        $targetHasPaid = $targetIsDefault->contains(false);
+        $conflictingBundleIds = BundleItem::where('item_id', $request->item_id)
+        ->where('item_type', $request->item_type)
+        ->where('bundle_id', '!=', $bundleId)
+        ->pluck('bundle_id');
+        if ($conflictingBundleIds->isNotEmpty()) {
+        $conflictPlanTypes = DB::table('plan_services')
+            ->join('subscription_plans', 'plan_services.plan_id', '=', 'subscription_plans.id')
+            ->whereIn('plan_services.bundle_id', $conflictingBundleIds)
+            ->where('subscription_plans.is_active', true)
+            ->select('subscription_plans.id', 'subscription_plans.name_en', 'subscription_plans.is_default')
+            ->get();
 
+        $conflictHasFree = $conflictPlanTypes->where('is_default', true)->isNotEmpty();
+        $conflictHasPaid = $conflictPlanTypes->where('is_default', false)->isNotEmpty();
+
+        if ($targetHasPaid && $conflictHasFree) {
+            $plans = $conflictPlanTypes->where('is_default', true)->values();
+            return response()->json([
+                'message'    => 'This item is already assigned to a free (default) plan. Remove it from the free plan before adding it to a paid plan.',
+                'error_code' => 'ITEM_IN_FREE_PLAN',
+                'plans'      => $plans->map(fn($p) => ['id' => $p->id, 'name_en' => $p->name_en]),
+            ], 409);
+        }
+
+        if ($targetHasFree && $conflictHasPaid) {
+            $plans = $conflictPlanTypes->where('is_default', false)->values();
+            return response()->json([
+                'message'    => 'This item is already assigned to a paid plan. Remove it from the paid plan before adding it to a free plan.',
+                'error_code' => 'ITEM_IN_PAID_PLAN',
+                'plans'      => $plans->map(fn($p) => ['id' => $p->id, 'name_en' => $p->name_en]),
+            ], 409);
+        }
+    }
         BundleItem::updateOrCreate([
             'bundle_id' => $bundle->id,
             'item_type' => $request->item_type,
             'item_id'   => $request->item_id,
         ]);
 
+        if ($targetHasFree) {
+    if ($request->item_type === 1) {
+        Channel::where('id', $request->item_id)->update(['is_free' => true]);
+    } elseif ($request->item_type === 2) {
+        RadioChannel::where('id', $request->item_id)->update(['is_free' => true]);
+    }
+}
         $this->clearCaches();
 
         return response()->json(['message' => 'Item added to bundle']);

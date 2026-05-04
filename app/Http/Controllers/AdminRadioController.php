@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\RadioChannel;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-
+use Illuminate\Support\Facades\Cache;
 class AdminRadioController extends Controller
 {
     public function index(): JsonResponse
@@ -21,6 +21,7 @@ class AdminRadioController extends Controller
             'icon_url'    => 'nullable|url',
             'is_active'   => 'boolean',
             'is_free'     => 'boolean',
+            'is_public'   => 'boolean',
         ]);
 
         $radio = RadioChannel::create($validated);
@@ -38,9 +39,13 @@ class AdminRadioController extends Controller
             'icon_url'    => 'nullable|url',
             'is_active'   => 'boolean',
             'is_free'     => 'boolean',
+            'is_public' => 'boolean', 
+
         ]);
 
         $radio->update($validated);
+        Cache::forget('global_active_radio_list');
+        Cache::forget('radio_plan_map');
         return response()->json($radio);
     }
 
@@ -49,4 +54,17 @@ class AdminRadioController extends Controller
         RadioChannel::findOrFail($id)->delete();
         return response()->json(['message' => 'Radio deleted']);
     }
+    public function togglePublic($id): JsonResponse
+{
+    $radio = RadioChannel::findOrFail($id);
+    $radio->is_public = !$radio->is_public;
+    $radio->save();
+
+    Cache::forget('global_active_radio_list');
+
+    return response()->json([
+        'message' => 'Visibility updated',
+        'is_public' => $radio->is_public
+    ]);
+}
 }

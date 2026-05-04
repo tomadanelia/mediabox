@@ -158,7 +158,7 @@ class AdminPlansController extends Controller
 
     $plan->delete(); // cascade removes plan_services rows via FK
     Cache::forget('channel_plan_map');
-
+    Cache::forget('radio_plan_map');          
     return response()->json(['message' => 'Subscription plan deleted successfully'], 200);
 }
     public function grantPlanToUser(Request $request, string $userId)
@@ -214,12 +214,75 @@ public function attachBundle(Request $request, string $planId): JsonResponse
     ]);
 
     $plan = SubscriptionPlan::findOrFail($planId);
-    
-    // Using syncWithoutDetaching avoids duplicates
+
+    $bundleItems = BundleItem::where('bundle_id', $request->bundle_id)->get();
+
+    if ($bundleItems->isNotEmpty()) {
+       $itemConflicts = DB::table('bundle_items as bi_other')
+    ->join('plan_services', 'plan_services.bundle_id', '=', 'bi_other.bundle_id')
+    ->join('subscription_plans as sp', 'plan_services.plan_id', '=', 'sp.id')
+    ->where('bi_other.bundle_id', '!=', $request->bundle_id)
+    ->where('sp.is_active', true)
+    ->whereIn('bi_other.item_id', $itemIds)      
+    ->whereIn('bi_other.item_type', $itemTypes)  
+    ->select('bi_other.item_id', 'bi_other.item_type', 'sp.id as plan_id', 'sp.name_en', 'sp.is_default')
+    ->get()
+    ->filter(function ($row) use ($bundleItems) {
+        return $bundleItems->contains(function ($item) use ($row) {
+            return $item->item_id === $row->item_id 
+                && $item->item_type === $row->item_type;
+        });
+    });
+        $conflictHasFree = $itemConflicts->where('is_default', true)->isNotEmpty();
+        $conflictHasPaid = $itemConflicts->where('is_default', false)->isNotEmpty();
+
+        if ($plan->is_default && $conflictHasPaid) {
+            return response()->json([
+                'message'    => 'Some items in this bundle are already assigned to paid plans. Remove them from those plans first.',
+                'error_code' => 'BUNDLE_ITEMS_IN_PAID_PLANS',
+                'conflicts'  => $itemConflicts->where('is_default', false)->map(fn($c) => [
+                    'item_id' => $c->item_id,
+                    'plan_id' => $c->plan_id,
+                    'plan_name_en' => $c->name_en,
+                ])->values(),
+            ], 409);
+        }
+
+        if (!$plan->is_default && $conflictHasFree) {
+            return response()->json([
+                'message'    => 'Some items in this bundle are already assigned to a free (default) plan. Remove them from the free plan first.',
+                'error_code' => 'BUNDLE_ITEMS_IN_FREE_PLAN',
+                'conflicts'  => $itemConflicts->where('is_default', true)->map(fn($c) => [
+                    'item_id' => $c->item_id,
+                    'plan_id' => $c->plan_id,
+                    'plan_name_en' => $c->name_en,
+                ])->values(),
+            ], 409);
+        }
+    }
+
     $plan->bundles()->syncWithoutDetaching([$request->bundle_id]);
+
+if ($plan->is_default) {
+    $items = BundleItem::where('bundle_id', $request->bundle_id)
+        ->whereIn('item_type', [1, 2])
+        ->get()
+        ->groupBy('item_type');
+
+    if ($items->has(1)) {
+        Channel::whereIn('id', $items[1]->pluck('item_id'))->update(['is_free' => true]);
+    }
+
+    if ($items->has(2)) {
+        RadioChannel::whereIn('id', $items[2]->pluck('item_id'))->update(['is_free' => true]);
+    }
+}
 
     Cache::forget('channel_plan_map');
     Cache::forget("plan_content_details_{$planId}");
+    Cache::forget('global_active_radio_list'); 
+    Cache::forget('radio_plan_map');           
+
     return response()->json(['message' => 'Bundle successfully attached to plan']);
 }
 
@@ -235,7 +298,8 @@ public function detachBundle(Request $request, string $planId): JsonResponse
 
     Cache::forget('channel_plan_map');
     Cache::forget("plan_content_details_{$planId}");
-
+    Cache::forget('global_active_radio_list'); 
+    Cache::forget('radio_plan_map');          
     return response()->json(['message' => 'Bundle detached']);
 }
 }
