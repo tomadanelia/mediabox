@@ -245,7 +245,7 @@ public function attachBundle(Request $request, string $planId): JsonResponse
                 'conflicts'  => $itemConflicts->where('is_default', false)->map(fn($c) => [
                     'item_id' => $c->item_id,
                     'plan_id' => $c->plan_id,
-                    'plan_name_en' => $c->name_en,
+                    'plan_name_ka' => $c->name_ka,
                 ])->values(),
             ], 409);
         }
@@ -257,7 +257,7 @@ public function attachBundle(Request $request, string $planId): JsonResponse
                 'conflicts'  => $itemConflicts->where('is_default', true)->map(fn($c) => [
                     'item_id' => $c->item_id,
                     'plan_id' => $c->plan_id,
-                    'plan_name_en' => $c->name_en,
+                    'plan_name_ka' => $c->name_ka,
                 ])->values(),
             ], 409);
         }
