@@ -47,6 +47,18 @@ beforeEach(function () {
     ]);
 });
 
+it('prevents attaching a bundle to Free plan if it contains items already in a Paid plan', function () {
+    BundleItem::create(['bundle_id' => $this->bundleB->id, 'item_type' => 1, 'item_id' => $this->channel->id]);
+    $this->paidPlan->bundles()->attach($this->bundleB->id);
+
+    actingAs($this->admin)
+        ->postJson("/api/admin/plans/{$this->freePlan->id}/bundles", [
+            'bundle_id' => $this->bundleB->id
+        ])
+        ->assertStatus(409)
+        ->assertJsonPath('error_code', 'BUNDLE_ITEMS_IN_PAID_PLANS');
+});
+
 /**
  * ATTACH BUNDLE TESTS
  */
@@ -63,18 +75,6 @@ it('updates is_free flags when a bundle is attached to the free plan', function 
 
     expect($this->channel->fresh()->is_free)->toBeTrue();
     expect($this->radio->fresh()->is_free)->toBeTrue();
-});
-
-it('prevents attaching a bundle to Free plan if it contains items already in a Paid plan', function () {
-    BundleItem::create(['bundle_id' => $this->bundleB->id, 'item_type' => 1, 'item_id' => $this->channel->id]);
-    $this->paidPlan->bundles()->attach($this->bundleB->id);
-
-    actingAs($this->admin)
-        ->postJson("/api/admin/plans/{$this->freePlan->id}/bundles", [
-            'bundle_id' => $this->bundleB->id
-        ])
-        ->assertStatus(409)
-        ->assertJsonPath('error_code', 'BUNDLE_ITEMS_IN_PAID_PLANS');
 });
 
 /**
