@@ -111,9 +111,11 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::get('urls', [AdminChannelUrlController::class, 'index']);
         Route::post('urls', [AdminChannelUrlController::class, 'storeLive']);
         Route::delete('urls/{id}', [AdminChannelUrlController::class, 'destroyLive']);
+        Route::put('urls/{id}', [AdminChannelUrlController::class, 'updateLive']); 
 
         Route::post('archive-urls', [AdminChannelUrlController::class, 'storeArchive']);
         Route::delete('archive-urls/{id}', [AdminChannelUrlController::class, 'destroyArchive']);
+        Route::put('archive-urls/{id}', [AdminChannelUrlController::class, 'updateArchive']);
     });
     });
     Route::get('/users', [AdminCategoryController::class, 'users']);
