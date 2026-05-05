@@ -12,8 +12,12 @@ use Illuminate\Validation\ValidationException;
 use \Illuminate\Support\Str;
 use App\Models\UserSubscription;
 use Illuminate\Support\Facades\Cache;
+use App\Services\BroadcastService;
 class SubscriptionService
 {
+     public function __construct(
+        protected BroadcastService $broadcast 
+    ) {}
     public function purchasePlan(User $user, string $planId,bool $autoRenew ): array
     {   
     $identifier = $user->full_name ?? (string)$user->numeric_id;
@@ -80,9 +84,17 @@ class SubscriptionService
                     'auto_renew' => $autoRenew
                 ]);
             }
-            
+            $this->broadcast->sendUserNotify($user->id, 'notification_received', [
+                'type' => 'subscription_updated',
+                'title' => 'Plan Activated',
+                'message' => "Your '{$plan->name_en}' plan is now active.",
+                'payload' => [
+                    'plan_id' => $plan->id,
+                    'action' => 'refresh_access'
+                ]
+            ]);
             Cache::forget("user_plan_ids_{$user->id}");
-
+            
             return [
             'success' => true,
             'invoice' => [
@@ -146,7 +158,11 @@ class SubscriptionService
         ]);
 
         $user->increment('tv_limit', $quantity);
-
+        $this->broadcast->sendUserNotify($user->id, 'notification_received', [
+                'type' => 'tv_limit_updated',
+                'new_limit' => $user->tv_limit,
+                'message' => "TV Device limit increased to {$user->tv_limit}"
+            ]);
          return [
             'success' => true,
             'invoice' => [
