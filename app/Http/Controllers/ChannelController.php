@@ -50,9 +50,9 @@ class ChannelController extends Controller
             [$formatted, $accessibleIds] = $carry;
 
             $channelPlans = $channelPlanMap[$channel->id] ?? [];
-            $isAccessible = !empty(array_intersect_key(
-                array_flip($channelPlans),
-                $userPlanIdMap
+            $isAccessible = $channel->is_free || !empty(array_intersect_key(
+              array_flip($channelPlans),
+              $userPlanIdMap
             ));
 
             if (!$channel->is_public && !$isAccessible) {
