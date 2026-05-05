@@ -68,4 +68,46 @@ class AdminNotificationController extends Controller
 
     return response()->json(['message' => 'Global announcement saved and broadcasted.']);
 }
+/**
+     * List all global announcements (where user_id is null)
+     */
+    public function getGlobalNotifications(): JsonResponse
+    {
+        $notifications = Notification::whereNull('user_id')
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return response()->json($notifications);
+    }
+
+    /**
+     * List all private notifications for a specific user
+     */
+    public function getUserNotifications(string $userId): JsonResponse
+    {
+        $user = User::findOrFail($userId);
+
+        $notifications = Notification::where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return response()->json([
+            'user' => [
+                'username' => $user->username,
+                'numeric_id' => $user->numeric_id
+            ],
+            'notifications' => $notifications
+        ]);
+    }
+
+    public function destroy(string $id): JsonResponse
+    {
+        $notification = Notification::findOrFail($id);
+        
+        $notification->delete();
+
+        return response()->json([
+            'message' => 'Notification deleted successfully'
+        ]);
+    }
 }

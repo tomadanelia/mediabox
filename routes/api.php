@@ -170,7 +170,13 @@ Route::prefix('/modules')->group(function () {
     Route::patch('radios/{id}/toggle-public', [AdminRadioController::class, 'togglePublic']);
     Route::post('/notifications/global', [AdminNotificationController::class, 'broadcastGlobal']);
     Route::post('/notifications/user/{userId}', [AdminNotificationController::class, 'notifyUser']);
-   
+     Route::prefix('notifications')->group(function () {
+        Route::get('/global', [AdminNotificationController::class, 'getGlobalNotifications']);
+
+        Route::get('/user/{userId}', [AdminNotificationController::class, 'getUserNotifications']);
+
+        Route::delete('/{id}', [AdminNotificationController::class, 'destroy']);
+    });
     Route::patch('/users/{userId}/role', [AdminUserController::class, 'updateRole']);
     Route::post('/settings/homepage', [SettingController::class, 'updateHomepageSettings']);
     Route::prefix('/settings/tokens')->group(function () {
