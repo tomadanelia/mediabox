@@ -164,6 +164,8 @@ Route::prefix('/modules')->group(function () {
         Route::post('/{id}/assign', [AdminDiscountController::class, 'assignToUser']); 
     });
     Route::apiResource('radios', AdminRadioController::class);
+    Route::patch('radios/{id}/toggle-active', [AdminRadioController::class, 'toggleActive']);
+    Route::patch('radios/{id}/toggle-public', [AdminRadioController::class, 'togglePublic']);
     Route::post('/notifications/global', [AdminNotificationController::class, 'broadcastGlobal']);
     Route::post('/notifications/user/{userId}', [AdminNotificationController::class, 'notifyUser']);
    

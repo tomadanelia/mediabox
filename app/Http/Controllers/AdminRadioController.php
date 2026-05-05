@@ -54,6 +54,21 @@ class AdminRadioController extends Controller
         RadioChannel::findOrFail($id)->delete();
         return response()->json(['message' => 'Radio deleted']);
     }
+    public function toggleActive($id): JsonResponse
+{
+    $radio = RadioChannel::findOrFail($id);
+    $radio->is_active = !$radio->is_active;
+    $radio->save();
+
+    Cache::forget('global_active_radio_list');
+    Cache::forget('radio_plan_map');
+
+    return response()->json([
+        'message' => 'Radio status updated',
+        'is_active' => $radio->is_active
+    ]);
+}
+
     public function togglePublic($id): JsonResponse
 {
     $radio = RadioChannel::findOrFail($id);
@@ -61,7 +76,7 @@ class AdminRadioController extends Controller
     $radio->save();
 
     Cache::forget('global_active_radio_list');
-
+    Cache::forget('radio_plan_map');
     return response()->json([
         'message' => 'Visibility updated',
         'is_public' => $radio->is_public
