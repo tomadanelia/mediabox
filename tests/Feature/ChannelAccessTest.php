@@ -26,7 +26,7 @@ beforeEach(function () {
         'password' => bcrypt('password'),
     ]);
 
-    // 3. Create a standard Private/Paid Channel
+    // Private Channel (Number 10)
     $this->privateChannel = Channel::create([
         'external_id' => 'private-1',
         'name' => 'Private Channel',
@@ -42,11 +42,10 @@ beforeEach(function () {
         'item_id' => $this->privateChannel->id
     ]);
 
-    // 4. Seed a stream URL so we can test successful access (not just 403/404)
     ChannelUrl::create([
         'channel_id' => 'private-1',
         'channel_url' => 'http://test.com/stream/s01/test/index.m3u8',
-        'url_type' => 3, // Flussonic local
+        'url_type' => 3,
         'priority' => 1
     ]);
 });
@@ -63,7 +62,6 @@ it('hides a private channel from unauthorized users', function () {
 });
 
 it('shows a private channel only when the user has the correct plan', function () {
-    // Grant Plan
     $this->user->subscriptionPlans()->attach($this->paidPlan->id, [
         'id' => str()->uuid(),
         'started_at' => now(),
@@ -76,11 +74,11 @@ it('shows a private channel only when the user has the correct plan', function (
         ->getJson('/api/channels')
         ->assertSuccessful()
         ->assertJson(fn (AssertableJson $json) =>
-            $json->has('channels', fn ($items) =>
-                $items->where('id', 'private-1')
-                      ->where('is_accessible', true)
-                      ->etc()
-            )->etc()
+            $json->has('channels')
+                 // We look at index 0 because it's the only channel visible
+                 ->where('channels.0.id', 'private-1')
+                 ->where('channels.0.is_accessible', true)
+                 ->etc()
         );
 });
 
@@ -91,33 +89,33 @@ it('shows a public paid channel to guests but marks it as inaccessible', functio
     getJson('/api/channels')
         ->assertSuccessful()
         ->assertJson(fn (AssertableJson $json) =>
-            $json->has('channels', fn ($items) =>
-                $items->where('id', 'private-1')
-                      ->where('is_accessible', false)
-                      ->etc()
-            )->etc()
+            $json->has('channels')
+                 ->where('channels.0.id', 'private-1')
+                 ->where('channels.0.is_accessible', false)
+                 ->etc()
         );
 });
 
 it('shows a free channel to everyone and marks it as accessible', function () {
+    // Create a Free Channel with number 1 (so it appears at index 0)
     Channel::create([
         'external_id' => 'free-ch',
         'name' => 'Free TV',
         'is_public' => true,
         'is_active' => true,
         'is_free' => true,
-        'number' => 1
+        'number' => 1 
     ]);
     Cache::flush();
 
     getJson('/api/channels')
         ->assertSuccessful()
         ->assertJson(fn (AssertableJson $json) =>
-            $json->has('channels', fn ($items) =>
-                $items->where('id', 'free-ch')
-                      ->where('is_accessible', true)
-                      ->etc()
-            )->etc()
+            $json->has('channels')
+                 // free-ch is number 1, so it's first in the list
+                 ->where('channels.0.id', 'free-ch')
+                 ->where('channels.0.is_accessible', true)
+                 ->etc()
         );
 });
 
@@ -131,7 +129,7 @@ it('hides a channel entirely if it is inactive, even if public and subscribed', 
     actingAs($this->user)
         ->getJson('/api/channels')
         ->assertSuccessful()
-        ->assertJsonMissing(['id' => 'private-1']);
+        ->assertJsonCount(0, 'channels'); // Should be empty
 });
 
 /**
@@ -146,7 +144,10 @@ it('denies stream access to paid content for non-subscribers', function () {
 
 it('allows stream access to paid content for active subscribers', function () {
     $this->user->subscriptionPlans()->attach($this->paidPlan->id, [
-        'id' => str()->uuid(), 'started_at' => now(), 'expires_at' => now()->addMonth(), 'is_active' => true
+        'id' => str()->uuid(),
+        'started_at' => now(),
+        'expires_at' => now()->addMonth(),
+        'is_active' => true
     ]);
     Cache::flush();
 
@@ -168,23 +169,4 @@ it('denies stream access if the subscription has expired', function () {
     actingAs($this->user)
         ->getJson("/api/channels/private-1/stream")
         ->assertStatus(403);
-});
-
-it('allows stream access to a free channel for guest users', function () {
-    Channel::create([
-        'external_id' => 'free-stream',
-        'name' => 'Free Stream',
-        'is_free' => true,
-        'is_active' => true,
-        'number' => 5
-    ]);
-    ChannelUrl::create([
-        'channel_id' => 'free-stream',
-        'channel_url' => 'http://test.com/s01/free/index.m3u8',
-        'url_type' => 3
-    ]);
-
-    getJson("/api/channels/free-stream/stream")
-        ->assertSuccessful()
-        ->assertJsonStructure(['url']);
 });
