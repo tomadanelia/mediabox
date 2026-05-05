@@ -7,7 +7,9 @@ use App\Models\ServiceBundle;
 use App\Models\BundleItem;
 use Illuminate\Support\Facades\Cache;
 use function Pest\Laravel\{actingAs, getJson};
+use Illuminate\Foundation\Testing\RefreshDatabase; 
 
+uses(RefreshDatabase::class); 
 beforeEach(function () {
     $this->seed([\Database\Seeders\SubscriptionPlanSeeder::class]);
     
