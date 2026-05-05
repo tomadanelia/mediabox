@@ -75,7 +75,6 @@ it('shows a private channel only when the user has the correct plan', function (
         ->assertSuccessful()
         ->assertJson(fn (AssertableJson $json) =>
             $json->has('channels')
-                 // We look at index 0 because it's the only channel visible
                  ->where('channels.0.id', 'private-1')
                  ->where('channels.0.is_accessible', true)
                  ->etc()
@@ -97,8 +96,7 @@ it('shows a public paid channel to guests but marks it as inaccessible', functio
 });
 
 it('shows a free channel to everyone and marks it as accessible', function () {
-    // Create a Free Channel with number 1 (so it appears at index 0)
-    Channel::create([
+    $freeCh = Channel::create([
         'external_id' => 'free-ch',
         'name' => 'Free TV',
         'is_public' => true,
@@ -106,13 +104,21 @@ it('shows a free channel to everyone and marks it as accessible', function () {
         'is_free' => true,
         'number' => 1 
     ]);
+
+    $freeBundle = ServiceBundle::create(['slug' => 'free-bundle', 'name' => 'Free Bundle', 'type' => 'tv']);
+    $this->freePlan->bundles()->attach($freeBundle->id);
+    BundleItem::create([
+        'bundle_id' => $freeBundle->id,
+        'item_type' => 1,
+        'item_id'   => $freeCh->id
+    ]);
+
     Cache::flush();
 
     getJson('/api/channels')
         ->assertSuccessful()
         ->assertJson(fn (AssertableJson $json) =>
             $json->has('channels')
-                 // free-ch is number 1, so it's first in the list
                  ->where('channels.0.id', 'free-ch')
                  ->where('channels.0.is_accessible', true)
                  ->etc()
