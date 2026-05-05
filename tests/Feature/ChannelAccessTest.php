@@ -16,9 +16,10 @@ uses(RefreshDatabase::class);
 beforeEach(function () {
     $this->seed([\Database\Seeders\SubscriptionPlanSeeder::class]);
     Cache::flush();
-
     $this->freePlan = SubscriptionPlan::find('00000000-0000-0000-0000-000000000000');
     $this->paidPlan = SubscriptionPlan::where('is_default', false)->first();
+    $this->bundle = ServiceBundle::create(['slug' => 'premium-tv', 'name' => 'Premium TV', 'type' => 'tv']);
+    $this->paidPlan->bundles()->attach($this->bundle->id);
 
     $this->user = User::create([
         'username' => 'viewer',
@@ -93,15 +94,22 @@ it('shows a public paid channel to guests but marks it as inaccessible', functio
                  ->etc()
         );
 });
-
 it('shows a free channel to everyone and marks it as accessible', function () {
-    Channel::create([
+    $freeCh = Channel::create([
         'external_id' => 'free-ch',
         'name' => 'Free TV',
         'is_public' => true,
         'is_active' => true,
         'is_free' => true,
         'number' => 1 
+    ]);
+
+    $freeBundle = ServiceBundle::create(['slug' => 'free-bundle', 'name' => 'Free Bundle', 'type' => 'tv']);
+    $this->freePlan->bundles()->attach($freeBundle->id);
+    BundleItem::create([
+        'bundle_id' => $freeBundle->id,
+        'item_type' => 1,
+        'item_id'   => $freeCh->id
     ]);
 
     Cache::flush();
@@ -115,7 +123,6 @@ it('shows a free channel to everyone and marks it as accessible', function () {
                  ->etc()
         );
 });
-
 it('hides a channel entirely if it is inactive, even if public and subscribed', function () {
     $this->privateChannel->update(['is_active' => false, 'is_public' => true]);
     $this->user->subscriptionPlans()->attach($this->paidPlan->id, [
