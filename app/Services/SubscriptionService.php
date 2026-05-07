@@ -87,7 +87,7 @@ class SubscriptionService
             $this->broadcast->sendUserNotify($user->id, 'notification_received', [
                 'type' => 'subscription_updated',
                 'title' => 'Plan Activated',
-                'message' => "Your '{$plan->name_en}' plan is now active.",
+                'message' => "თქვენი '{$plan->name_ka}'  ახლა აქტიურია.",
                 'payload' => [
                     'plan_id' => $plan->id,
                     'action' => 'refresh_access'
@@ -161,7 +161,7 @@ class SubscriptionService
         $this->broadcast->sendUserNotify($user->id, 'notification_received', [
                 'type' => 'tv_limit_updated',
                 'new_limit' => $user->tv_limit,
-                'message' => "TV Device limit increased to {$user->tv_limit}"
+                'message' => "TV დივაისების ლიმიტი გაზრდილია  {$user->tv_limit}-მდე"
             ]);
          return [
             'success' => true,
