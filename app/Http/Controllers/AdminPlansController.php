@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\SubscriptionPlan;
+use App\Services\BroadcastService;
 use Illuminate\Support\Facades\Cache;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -15,6 +16,9 @@ use App\Models\RadioChannel;
 use Illuminate\Support\Facades\DB;
 class AdminPlansController extends Controller
 {
+     public function __construct(
+        protected BroadcastService $broadcast 
+    ) {}
     public function allPlans(): JsonResponse
     {
         $plans = SubscriptionPlan::all();
@@ -184,7 +188,15 @@ class AdminPlansController extends Controller
     ]);
 
     Cache::forget("user_plan_ids_{$user->id}");
-
+    $this->broadcast->sendUserNotify($user->id, 'notification_received', [
+                'type' => 'subscription_updated',
+                'title' => 'Plan Activated',
+                'message' => "თქვენ გაგიაქტიურდათ პაკეტი '{$plan->name_ka}'",
+                'payload' => [
+                    'plan_id' => $plan->id,
+                    'action' => 'refresh_access'
+                ]
+            ]);
     return response()->json([
         'message' => "Plan '{$plan->name_en}' granted to user successfully.",
         'expires_at' => now()->addDays($duration)
