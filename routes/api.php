@@ -25,7 +25,6 @@ use App\Http\Controllers\StatsController;
 use App\Http\Controllers\AdminChannelUrlController;
 use App\Http\Controllers\AdminBundleController;
 use App\Http\Controllers\TokenTtlController;
-
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/categories', [ChannelController::class, 'getCategories']);
@@ -202,3 +201,6 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::get('/metrics/realtime', [StatsController::class, 'getMetrics'])
     ->middleware('whitelist.ip');
 Route::get('/settings/homepage', [SettingController::class, 'getHomepageSettings']);
+Route::group(['middleware' => ['web']], function () {
+    Route::get('/init-visitor', [ChannelController::class, 'initVisitor']);
+});

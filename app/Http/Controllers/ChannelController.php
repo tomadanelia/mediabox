@@ -17,18 +17,24 @@ class ChannelController extends Controller
         protected SyncingService $syncing_service,
         protected ConcurrencyService $concurrencyService
     ) {}
+    public function initVisitor()
+{
+    session(['is_web_visitor' => true]);
 
+    return response()->json([
+        'status' => 'ready',
+        'message' => 'Visitor session initialized'
+    ]);
+}
     public function getChannelFacade(): JsonResponse
 {
     Auth::shouldUse('sanctum');
-    $user    = request()->user();
+    $user = request()->user();
     $freePlanId = '00000000-0000-0000-0000-000000000000';
+    $hasHandshake = session('is_web_visitor', false);
 
     $allChannels = Cache::remember('global_active_channels_list', 3600, function () {
-        return Channel::with('category')
-            ->where('is_active', true)
-            ->orderBy('number', 'asc')
-            ->get();
+        return Channel::with('category')->where('is_active', true)->orderBy('number', 'asc')->get();
     });
 
     $channelPlanMap = Cache::remember('channel_plan_map', 3600, function () {
@@ -36,24 +42,28 @@ class ChannelController extends Controller
             ->where('item_type', 1)
             ->join('plan_services', 'plan_services.bundle_id', '=', 'bundle_items.bundle_id')
             ->select('bundle_items.item_id as channel_id', 'plan_services.plan_id')
-            ->get()
-            ->groupBy('channel_id')
-            ->map(fn($rows) => $rows->pluck('plan_id')->all());
+            ->get()->groupBy('channel_id')->map(fn($rows) => $rows->pluck('plan_id')->all());
     });
 
-    $userPlanIdMap = array_flip(
-        array_merge($user ? $user->getActivePlanIds() : [], [$freePlanId])
-    );
+    $userPlanIds = $user ? $user->getActivePlanIds() : [];
+    $userPlanIdMap = array_flip($userPlanIds);
 
     [$formattedChannels, $accessibleIds] = $allChannels->reduce(
-        function ($carry, $channel) use ($userPlanIdMap, $channelPlanMap) {
+        function ($carry, $channel) use ($userPlanIdMap, $channelPlanMap, $freePlanId, $hasHandshake, $user) {
             [$formatted, $accessibleIds] = $carry;
 
             $channelPlans = $channelPlanMap[$channel->id] ?? [];
-            $isAccessible = $channel->is_free || !empty(array_intersect_key(
-              array_flip($channelPlans),
-              $userPlanIdMap
-            ));
+            if (empty($channelPlans)) return $carry; // Ignore channels with no plan
+
+            $isFreeChannel = in_array($freePlanId, $channelPlans);
+            
+            $hasPaidPlan = !empty(array_intersect_key(array_flip($channelPlans), $userPlanIdMap));
+            
+            if ($user) {
+                $isAccessible = $isFreeChannel || $hasPaidPlan;
+            } else {
+                $isAccessible = $isFreeChannel && $hasHandshake;
+            }
 
             if (!$channel->is_public && !$isAccessible) {
                 return $carry;
@@ -69,10 +79,7 @@ class ChannelController extends Controller
                 'name'          => $channel->name,   
                 'logo'          => $channel->icon_url,
                 'number'        => $channel->number,
-                'category_en'   => $channel->category?->name_en,
                 'category_ka'   => $channel->category?->name_ka,
-                'category_id'   => $channel->category?->id,
-                'is_free'       => $channel->is_free,
                 'is_accessible' => $isAccessible,
             ];
 
@@ -86,12 +93,10 @@ class ChannelController extends Controller
         'accessible_external_ids' => $accessibleIds,
     ]);
 }
-
 public function getChannelPlans($id): JsonResponse
 {
     $channel = Channel::where('external_id', $id)->firstOrFail();
 
-    // Direct DB query — no broken relationship needed
     $plans = DB::table('subscription_plans')
         ->join('plan_services', 'plan_services.plan_id', '=', 'subscription_plans.id')
         ->join('bundle_items', 'bundle_items.bundle_id', '=', 'plan_services.bundle_id')
@@ -121,7 +126,7 @@ public function getStreamUrl($id, Request $request): JsonResponse
   
     $channel = Channel::where('external_id', $id)->firstOrFail();
     
-    if (!$channel->is_free && !$this->canAccessChannel($channel)) {
+    if (!$this->canAccessChannel($channel)) {
              return response()->json(['message' => 'Subscription required'], 403);
     }
     
@@ -177,7 +182,7 @@ public function getStreamUrl($id, Request $request): JsonResponse
     
     $channel = Channel::where('external_id', $id)->firstOrFail();
 
-    if (!$channel->is_free && !$this->canAccessChannel($channel)) {
+    if (!$this->canAccessChannel($channel)) {
     return response()->json(['message' => 'Subscription required'], 403);
 
     }
@@ -194,26 +199,30 @@ public function getStreamUrl($id, Request $request): JsonResponse
 
     return response()->json($archiveData);
 }
-    
-    private function canAccessChannel(Channel $channel): bool
+   private function canAccessChannel(Channel $channel): bool
 {
-    if ($channel->is_free) {
-        return true;
-    }
     Auth::shouldUse('sanctum');
-    $user = request()->user();
-    if (!$user) {
-        return false;
-    }
-    $requiredPlanIds = $channel->getRequiredPlanIds();
+    $user = request()->user(); 
+    $requiredPlanIds = Cache::remember("channel_plans_{$channel->id}", 3600, function() use ($channel) {
+        return DB::table('bundle_items')
+            ->where('item_type', 1)
+            ->where('item_id', $channel->id)
+            ->join('plan_services', 'plan_services.bundle_id', '=', 'bundle_items.bundle_id')
+            ->pluck('plan_id')
+            ->toArray();
+    });
 
     if (empty($requiredPlanIds)) {
-        return false;
+        return false; 
     }
 
-    $userPlanIds = $user->getActivePlanIds();
-    return !empty(array_intersect($requiredPlanIds, $userPlanIds));
-}
+    $freePlanId = '00000000-0000-0000-0000-000000000000';
+    $isFreeChannel = in_array($freePlanId, $requiredPlanIds);
 
+    if ($user) {
+        return $isFreeChannel || !empty(array_intersect($requiredPlanIds, $user->getActivePlanIds()));
+    }
+    return $isFreeChannel && (bool) session('is_web_visitor');
+}
 
 }
