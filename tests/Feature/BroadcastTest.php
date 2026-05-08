@@ -54,13 +54,11 @@ it('broadcasts a notification when admin manually GRANTS a plan', function () {
         ->assertSuccessful();
 });
 
-/**
- * REVOKE PLAN TEST
- */
 it('broadcasts a notification when admin manually REVOKES a plan', function () {
-    // 1. Give the user a plan first
+    // 1. Give the user a plan first - ADDED started_at and ID
     $this->targetUser->subscriptionPlans()->attach($this->plan->id, [
-        'id' => str()->uuid(),
+        'id' => (string) \Illuminate\Support\Str::uuid(),
+        'started_at' => now(), // FIXED: Added this
         'expires_at' => now()->addDays(30),
         'is_active' => true
     ]);
@@ -73,7 +71,6 @@ it('broadcasts a notification when admin manually REVOKES a plan', function () {
                 $this->targetUser->id,
                 'notification_received',
                 Mockery::on(function ($data) {
-                    // Check for the "Deactivated" status sent by the controller
                     return $data['type'] === 'subscription_updated' &&
                            $data['title'] === 'Plan Deactivated';
                 })

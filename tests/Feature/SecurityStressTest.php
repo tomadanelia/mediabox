@@ -64,23 +64,41 @@ it('denies access if the plan containing the bundle is set to inactive', functio
     $bundle = ServiceBundle::create(['slug' => 'test-b', 'name' => 'Test B', 'type' => 'tv']);
     BundleItem::create(['bundle_id' => $bundle->id, 'item_type' => 1, 'item_id' => $channel->id]);
     
-    $plan = SubscriptionPlan::create(['name_ka' => 'Plan', 'name_en' => 'Plan', 'price' => 10, 'is_active' => false]); // INACTIVE
+    $plan = SubscriptionPlan::create([
+        'name_ka' => 'Plan', 
+        'name_en' => 'Plan', 
+        'price' => 10, 
+        'duration_days' => 30, // FIXED: Added this
+        'is_active' => false
+    ]);
     $plan->bundles()->attach($bundle->id);
 
-    $user = User::create(['username' => 'user', 'password' => 'pass']);
-    $user->subscriptionPlans()->attach($plan->id, ['id' => str()->uuid(), 'is_active' => true, 'expires_at' => now()->addDays(10)]);
+    $user = User::create(['username' => 'user', 'password' => bcrypt('pass')]);
+    $user->subscriptionPlans()->attach($plan->id, [
+        'id' => (string) \Illuminate\Support\Str::uuid(), 
+        'started_at' => now(), // FIXED: Added this
+        'is_active' => true, 
+        'expires_at' => now()->addDays(10)
+    ]);
 
     Cache::flush();
 
     actingAs($user)
         ->getJson("/api/channels/test-ch/stream")
-        ->assertStatus(403); // Denied because SubscriptionPlan::is_active is false
+        ->assertStatus(403);
 });
+
 it('allows access to a free channel even if the users specific paid subscription for it has expired', function () {
     $channel = Channel::create(['external_id' => 'shared-ch', 'name' => 'Shared', 'is_active' => true, 'number' => 5]);
     
     // Put in Paid Plan
-    $paidPlan = SubscriptionPlan::create(['name_en' => 'Premium', 'price' => 20, 'is_active' => true]);
+    $paidPlan = SubscriptionPlan::create([
+        'name_ka' => 'პრემიუმი', // FIXED: Added this
+        'name_en' => 'Premium', 
+        'price' => 20, 
+        'duration_days' => 30, // FIXED: Added this
+        'is_active' => true
+    ]);
     $paidBundle = ServiceBundle::create(['slug' => 'premium-b', 'name' => 'Premium B', 'type' => 'tv']);
     $paidPlan->bundles()->attach($paidBundle->id);
     BundleItem::create(['bundle_id' => $paidBundle->id, 'item_type' => 1, 'item_id' => $channel->id]);
@@ -90,21 +108,21 @@ it('allows access to a free channel even if the users specific paid subscription
     SubscriptionPlan::find($this->freePlanId)->bundles()->attach($freeBundle->id);
     BundleItem::create(['bundle_id' => $freeBundle->id, 'item_type' => 1, 'item_id' => $channel->id]);
 
-    $user = User::create(['username' => 'user', 'password' => 'pass']);
-    // Give user the Paid Plan but make it EXPIRED
+    $user = User::create(['username' => 'user', 'password' => bcrypt('pass')]);
     $user->subscriptionPlans()->attach($paidPlan->id, [
-        'id' => str()->uuid(), 
+        'id' => (string) \Illuminate\Support\Str::uuid(), 
+        'started_at' => now()->subMonths(2), // FIXED: Added this
         'is_active' => true, 
-        'expires_at' => now()->subDay() // EXPIRED
+        'expires_at' => now()->subDay() 
     ]);
 
     Cache::flush();
 
-    // Should still work because the channel is currently in the Free Plan
     actingAs($user)
         ->getJson("/api/channels/shared-ch/stream")
         ->assertSuccessful();
 });
+
 it('denies access to guests who try to spoof being an app without a token', function () {
     $channel = Channel::create(['external_id' => 'paid-only', 'name' => 'Paid', 'is_active' => true, 'number' => 1]);
     // Linked to a paid plan...
