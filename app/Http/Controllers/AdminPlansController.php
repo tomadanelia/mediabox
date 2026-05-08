@@ -215,7 +215,14 @@ public function revokePlanFromUser(Request $request, string $userId)
     $user->subscriptionPlans()->detach($request->plan_id);
 
     Cache::forget("user_plan_ids_{$user->id}");
-
+    $this->broadcast->sendUserNotify($user->id, 'notification_received', [
+                'type' => 'subscription_updated',
+                'title' => 'Plan Deactivated',
+                'message' => "თქვენ ჩამოგერთვათ პაკეტი'",
+                'payload' => [
+                    'action' => 'refresh_access'
+                ]
+            ]);
     return response()->json([
         'message' => "Plan revoked from user successfully."
     ]);
