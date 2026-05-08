@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Testing\Fluent\AssertableJson;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use function Pest\Laravel\{actingAs, getJson, withSession}; 
-use function Pest\Laravel\{actingAs, getJson};
 
 uses(RefreshDatabase::class);
 
