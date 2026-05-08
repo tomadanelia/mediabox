@@ -7,6 +7,8 @@ use App\Models\ServiceBundle;
 use App\Models\BundleItem;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Services\SyncingService;
+use Mockery\MockInterface;
 use function Pest\Laravel\{actingAs, getJson, withSession};
 
 uses(RefreshDatabase::class);
@@ -36,6 +38,10 @@ beforeEach(function () {
     BundleItem::create(['bundle_id' => $paidBundle->id, 'item_type' => 1, 'item_id' => $this->paidChannel->id]);
 
     $this->user = User::create(['username' => 'viewer', 'password' => bcrypt('password')]);
+    $this->mock(SyncingService::class, function (MockInterface $mock) {
+        $mock->shouldReceive('getStreamUrl')->andReturn(['url' => 'http://fake.url', 'expires_at' => 12345]);
+        $mock->shouldReceive('getArchiveUrl')->andReturn(['url' => 'http://fake.url/archive', 'expires_at' => 12345]);
+    });
 });
 
 /**
@@ -65,7 +71,6 @@ it('allows free channel access to logged in users without a handshake', function
         ->getJson("/api/channels/{$this->freeChannel->external_id}/stream")
         ->assertSuccessful();
 });
-
 it('denies paid channel access to logged in users without the correct plan', function () {
     actingAs($this->user)
         ->getJson("/api/channels/{$this->paidChannel->external_id}/stream")

@@ -94,34 +94,28 @@ it('shows a public paid channel to guests but marks it as inaccessible', functio
                  ->etc()
         );
 });
-it('shows a free channel to everyone and marks it as accessible', function () {
+it('shows a free channel to everyone and marks it as accessible ONLY if handshake performed', function () {
     $freeCh = Channel::create([
         'external_id' => 'free-ch',
         'name' => 'Free TV',
-        'is_public' => true,
         'is_active' => true,
-        'is_free' => true,
         'number' => 1 
     ]);
 
     $freeBundle = ServiceBundle::create(['slug' => 'free-bundle', 'name' => 'Free Bundle', 'type' => 'tv']);
     $this->freePlan->bundles()->attach($freeBundle->id);
-    BundleItem::create([
-        'bundle_id' => $freeBundle->id,
-        'item_type' => 1,
-        'item_id'   => $freeCh->id
-    ]);
+    BundleItem::create(['bundle_id' => $freeBundle->id, 'item_type' => 1, 'item_id' => $freeCh->id]);
 
     Cache::flush();
 
+    // 1. Check without handshake (Should be false)
     getJson('/api/channels')
-        ->assertSuccessful()
-        ->assertJson(fn (AssertableJson $json) =>
-            $json->has('channels')
-                 ->where('channels.0.id', 'free-ch')
-                 ->where('channels.0.is_accessible', true)
-                 ->etc()
-        );
+        ->assertJsonPath('channels.0.is_accessible', false);
+
+    // 2. Check with handshake (Should be true)
+    withSession(['is_web_visitor' => true])
+        ->getJson('/api/channels')
+        ->assertJsonPath('channels.0.is_accessible', true);
 });
 it('hides a channel entirely if it is inactive, even if public and subscribed', function () {
     $this->privateChannel->update(['is_active' => false, 'is_public' => true]);
