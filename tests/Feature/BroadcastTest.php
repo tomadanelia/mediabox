@@ -7,9 +7,86 @@ use App\Services\SubscriptionService;
 use App\Services\BroadcastService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery\MockInterface;
+use function Pest\Laravel\{actingAs, postJson};
 
 uses(RefreshDatabase::class);
 
+uses(RefreshDatabase::class);
+
+beforeEach(function () {
+    $this->admin = User::create(['username' => 'admin', 'role' => 'admin', 'password' => 'pass']);
+    $this->targetUser = User::create(['username' => 'client', 'password' => 'pass']);
+    
+    $this->plan = SubscriptionPlan::create([
+        'name_ka' => 'პრემიუმი',
+        'name_en' => 'Premium',
+        'price' => 20.00,
+        'duration_days' => 30,
+        'is_active' => true
+    ]);
+});
+
+/**
+ * GRANT PLAN TEST
+ */
+it('broadcasts a notification when admin manually GRANTS a plan', function () {
+    // 1. Mock the BroadcastService
+    $this->mock(BroadcastService::class, function (MockInterface $mock) {
+        $mock->shouldReceive('sendUserNotify')
+            ->once()
+            ->with(
+                $this->targetUser->id,
+                'notification_received',
+                Mockery::on(function ($data) {
+                    return $data['type'] === 'subscription_updated' &&
+                           $data['title'] === 'Plan Activated' &&
+                           str_contains($data['message'], $this->plan->name_ka);
+                })
+            );
+    });
+
+    // 2. Perform Admin Action
+    actingAs($this->admin)
+        ->postJson("/api/admin/users/{$this->targetUser->id}/grant-plan", [
+            'plan_id' => $this->plan->id,
+            'days' => 30
+        ])
+        ->assertSuccessful();
+});
+
+/**
+ * REVOKE PLAN TEST
+ */
+it('broadcasts a notification when admin manually REVOKES a plan', function () {
+    // 1. Give the user a plan first
+    $this->targetUser->subscriptionPlans()->attach($this->plan->id, [
+        'id' => str()->uuid(),
+        'expires_at' => now()->addDays(30),
+        'is_active' => true
+    ]);
+
+    // 2. Mock the BroadcastService
+    $this->mock(BroadcastService::class, function (MockInterface $mock) {
+        $mock->shouldReceive('sendUserNotify')
+            ->once()
+            ->with(
+                $this->targetUser->id,
+                'notification_received',
+                Mockery::on(function ($data) {
+                    // Check for the "Deactivated" status sent by the controller
+                    return $data['type'] === 'subscription_updated' &&
+                           $data['title'] === 'Plan Deactivated';
+                })
+            );
+    });
+
+    // 3. Perform Admin Action
+    actingAs($this->admin)
+        ->postJson("/api/admin/users/{$this->targetUser->id}/revoke-plan", [
+            'plan_id' => $this->plan->id
+        ])
+        ->assertSuccessful();
+});
 it('broadcasts a websocket notification when a plan is purchased', function () {
     // 1. Setup User and Account with balance
     $user = User::create([
