@@ -198,8 +198,7 @@ Route::prefix('radio')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/channels/{id}/heartbeat', [StatsController::class, 'heartbeat']);
 });
-Route::get('/metrics/realtime', [StatsController::class, 'getMetrics'])
-    ->middleware('whitelist.ip');
+Route::get('/metrics/realtime', [StatsController::class, 'getMetrics']);
 Route::get('/settings/homepage', [SettingController::class, 'getHomepageSettings']);
 Route::group(['middleware' => ['web']], function () {
     Route::get('/init-visitor', [ChannelController::class, 'initVisitor']);

@@ -52,7 +52,7 @@ return [
     'proxy_ge'    => env('FLUSSONIC_PROXY_GE'),
     'proxy_global' => env('FLUSSONIC_PROXY_GLOBAL'),
     'cdn' => env('FLUSSONIC_CDN', 'https://cdn.streamer.mediabox.ge'),
-
+    'stats_token' => env('STATS_TOKEN'),
 ],
     
 
