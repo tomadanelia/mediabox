@@ -41,8 +41,12 @@ class ChannelController extends Controller
         return DB::table('bundle_items')
             ->where('item_type', 1)
             ->join('plan_services', 'plan_services.bundle_id', '=', 'bundle_items.bundle_id')
+            ->join('subscription_plans', 'subscription_plans.id', '=', 'plan_services.plan_id')
+            ->where('subscription_plans.is_active', true)
             ->select('bundle_items.item_id as channel_id', 'plan_services.plan_id')
-            ->get()->groupBy('channel_id')->map(fn($rows) => $rows->pluck('plan_id')->all());
+            ->get()
+            ->groupBy('channel_id')
+            ->map(fn($rows) => $rows->pluck('plan_id')->all());
     });
 
     $userPlanIds = $user ? $user->getActivePlanIds() : [];
@@ -208,6 +212,8 @@ public function getStreamUrl($id, Request $request): JsonResponse
             ->where('item_type', 1)
             ->where('item_id', $channel->id)
             ->join('plan_services', 'plan_services.bundle_id', '=', 'bundle_items.bundle_id')
+            ->join('subscription_plans', 'subscription_plans.id', '=', 'plan_services.plan_id')
+            ->where('subscription_plans.is_active', true)
             ->pluck('plan_id')
             ->toArray();
     });
