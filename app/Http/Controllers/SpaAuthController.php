@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Services\VerificationService;
 use App\Models\Account;
+use App\Services\BroadcastService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redis;
@@ -17,6 +18,7 @@ class SpaAuthController extends Controller
 {
     public function __construct(
         private VerificationService $verificationService,
+        private BroadcastService $broadcastService,
     ) {}
 
     public function verify(VerifyRequest $request): JsonResponse
@@ -55,16 +57,21 @@ class SpaAuthController extends Controller
 
         $this->verificationService->clearOtp($user->id);
         $redisKey = "user_web_session:{$user->id}";
-$oldSessionId = Redis::get($redisKey);
+        $oldSessionId = Redis::get($redisKey);
 
-if ($oldSessionId) {
-    Session::getHandler()->destroy($oldSessionId);
-}
+       if ($oldSessionId) {
+        Session::getHandler()->destroy($oldSessionId);
+        $this->broadcastService->sendUserNotify($user->id, 'force_logout', [
+                'type' => 'account_conflict',
+                'message' => 'თქვენი ანგარიშით შევიდნენ სხვა მოწყობილობიდან.',
+                'action' => 'logout'
+            ]);
+       }
+       Auth::login($user, $remember);
+       $request->session()->regenerate();
 
-Auth::login($user, $remember);
-$request->session()->regenerate();
+        Redis::setex($redisKey, config('session.lifetime') * 60, Session::getId());
 
-Redis::setex($redisKey, config('session.lifetime') * 60, Session::getId());
         return response()->json(['message' => 'Login successful', 'user' => $user]);
     }
 
