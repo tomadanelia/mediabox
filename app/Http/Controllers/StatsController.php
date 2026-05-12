@@ -10,7 +10,7 @@ use App\Models\Channel;
 class StatsController extends Controller
 {
     private const TTL = 120;
-    private const CHANNEL_CACHE_TTL = 300; // cache channel list 5 min
+    private const CHANNEL_CACHE_TTL = 300; 
 
     public function getMetrics(Request $request)
     {
@@ -33,13 +33,12 @@ class StatsController extends Controller
             return $query->pluck('name', 'external_id')->all();
         });
 
-        $pipe = Redis::pipeline();
+        $results = Redis::pipeline(function ($pipe) use ($cutoff, $channelMap) {
         $pipe->zrangebyscore('active_viewers:global', $cutoff, '+inf');
-        foreach (array_keys($channelMap) as $externalId) {
+         foreach (array_keys($channelMap) as $externalId) {
             $pipe->zrangebyscore("active_viewers:{$externalId}", $cutoff, '+inf');
-        }
-        $results = $pipe->execute();
-
+         }
+        });
         $globalMembers = array_shift($results);
 
         $stats = [
