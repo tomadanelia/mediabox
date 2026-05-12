@@ -26,7 +26,7 @@ class StatsController extends Controller
 
         $cacheKey   = 'stats_channel_map' . ($requestedIds ? md5(implode(',', $requestedIds)) : '_all');
         $channelMap = Cache::remember($cacheKey, self::CHANNEL_CACHE_TTL, function () use ($requestedIds) {
-            $query = Channel::select('external_id', 'name_en');
+            $query = Channel::select('external_id', 'name');
             if ($requestedIds) {
                 $query->whereIn('external_id', $requestedIds);
             }
