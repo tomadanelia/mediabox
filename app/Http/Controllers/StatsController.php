@@ -66,7 +66,7 @@ class StatsController extends Controller
         $users  = [];
 
         foreach ($members as $member) {
-            $parts = explode(':', $member, 6);
+            $parts = explode('|', $member, 6);
             if (count($parts) < 3) continue;
 
             [$userId, $platform, $socketId, $ip, $os, $version] = $parts;
