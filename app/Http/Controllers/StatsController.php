@@ -30,7 +30,7 @@ class StatsController extends Controller
             if ($requestedIds) {
                 $query->whereIn('external_id', $requestedIds);
             }
-            return $query->pluck('name_en', 'external_id')->all();
+            return $query->pluck('name', 'external_id')->all();
         });
 
         $pipe = Redis::pipeline();
