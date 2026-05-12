@@ -131,7 +131,27 @@ class ProfileController extends Controller
 public function getSocketToken(Request $request, SocketTokenService $service)
 {
 
-    $token = $service->generateToken($request->user()->id, 'spa_web');
+    $user = $request->user();
+    $ua = $request->userAgent() ?? '';
+
+    $os = 'Web/Unknown';
+    if (str_contains($ua, 'Android')) $os = 'Android';
+    elseif (str_contains($ua, 'iPhone') || str_contains($ua, 'iPad')) $os = 'iOS';
+    elseif (str_contains($ua, 'Windows')) $os = 'Windows';
+    elseif (str_contains($ua, 'Macintosh')) $os = 'MacOS';
+
+    $platform = str_contains(strtolower($ua), 'okhttp') ? 'tvapk' : 'spa';
+
+    $version = $request->header('X-App-Version', 'web-1.0.0');
+
+    $token = $service->generateToken(
+        (string) $user->id,
+        $request->input('device_id', 'web_browser'), 
+        $platform,
+        $request->ip(),
+        $os,
+        $version
+    );
 
     return response()->json(['socket_token' => $token]);
 }

@@ -63,24 +63,28 @@ class StatsController extends Controller
     {
         $spaCount = 0;
         $tvCount  = 0;
-        $userIds  = [];
+        $users  = [];
 
         foreach ($members as $member) {
-            $parts = explode(':', $member, 3); 
+            $parts = explode(':', $member, 6);
             if (count($parts) < 3) continue;
 
-            [$userId, $platform] = $parts;
-
-            if ($platform === 'spa')    $spaCount++;
+            [$userId, $platform, $socketId, $ip, $os, $version] = $parts;
+           
+            if ($platform === 'spa')       $spaCount++;
             elseif ($platform === 'tvapk') $tvCount++;
 
-            $userIds[$userId] = true; 
-        }
+            $users[$userId] = [
+            'ip'          => $ip,
+            'os'          => $os,
+            'apk_version' => $version,
+            'platform'    => $platform,
+        ];        }
 
         return [
             'total'       => count($members),
             'by_platform' => ['spa' => $spaCount, 'tvapk' => $tvCount],
-            'user_ids'    => array_keys($userIds),
+            'user_ids'    => $users??[],
         ];
     }
 }
