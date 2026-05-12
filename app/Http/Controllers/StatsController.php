@@ -84,7 +84,7 @@ class StatsController extends Controller
         return [
             'total'       => count($members),
             'by_platform' => ['spa' => $spaCount, 'tvapk' => $tvCount],
-            'user_ids'    => $users??[],
+            'users'    => $users??[],
         ];
     }
 }
