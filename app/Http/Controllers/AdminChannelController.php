@@ -95,13 +95,21 @@ public function togglePublic(Request $request, string $id): JsonResponse
 {
     $channel = Channel::findOrFail($id);
     $channel->update($request->validated());
-    Cache::forget('global_active_channels_list');
+
+   Cache::forget('global_active_channels_list');
     Cache::forget('channel_plan_map');
     Cache::forget("channel_plans_{$channel->id}");
 
-    // i use $channel->plans relationship to find which plan caches to bust
-    foreach ($channel->plans as $plan) {
-        Cache::forget("plan_channels_{$plan->id}");
+    $planIds = DB::table('plan_services')
+        ->join('bundle_items', 'bundle_items.bundle_id', '=', 'plan_services.bundle_id')
+        ->where('bundle_items.item_type', 1) 
+        ->where('bundle_items.item_id', $channel->id)
+        ->distinct()
+        ->pluck('plan_id');
+
+    foreach ($planIds as $planId) {
+        Cache::forget("plan_channels_{$planId}");
+        Cache::forget("plan_content_details_{$planId}");
     }
 
     return response()->json([
