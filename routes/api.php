@@ -203,3 +203,4 @@ Route::get('/settings/homepage', [SettingController::class, 'getHomepageSettings
 Route::group(['middleware' => ['web']], function () {
     Route::get('/init-visitor', [ChannelController::class, 'initVisitor']);
 });
+Route::patch('/admin/channels/{id}/number', [AdminChannelController::class, 'updateNumber']);

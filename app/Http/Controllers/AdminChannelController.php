@@ -57,7 +57,52 @@ class AdminChannelController extends Controller{
         'data' => $channel
     ], 201);
 }
-    // AdminChannelController.php — fix toggleActive and togglePublic
+public function updateNumber(Request $request, string $id): JsonResponse
+{
+    $request->validate([
+        'number' => 'required|integer|min:1',
+    ]);
+
+    $channel = Channel::findOrFail($id);
+
+    $oldNumber = $channel->number;
+    $newNumber = (int) $request->number;
+
+    if ($oldNumber === $newNumber) {
+        return response()->json([
+            'message' => 'არხის ნომერი უცვლელია',
+        ]);
+    }
+
+    DB::transaction(function () use ($channel, $oldNumber, $newNumber) {
+
+        if ($newNumber < $oldNumber) {
+            Channel::whereBetween('number', [$newNumber, $oldNumber - 1])
+                ->where('id', '!=', $channel->id)
+                ->increment('number');
+
+        } else {
+            Channel::whereBetween('number', [$oldNumber + 1, $newNumber])
+                ->where('id', '!=', $channel->id)
+                ->decrement('number');
+        }
+
+        $channel->number = $newNumber;
+        $channel->save();
+    });
+
+    Cache::forget('global_active_channels_list');
+    Cache::forget('channel_plan_map');
+
+    return response()->json([
+        'message' => "არხის ნომერი წარმატებით შეიცვალა: {$newNumber}",
+        'data' => [
+            'id' => $channel->id,
+            'number' => $channel->number,
+        ]
+    ]);
+}
+
 
 public function toggleActive(Request $request, string $id): JsonResponse
 {
