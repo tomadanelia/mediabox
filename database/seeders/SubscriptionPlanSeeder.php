@@ -23,6 +23,7 @@ class SubscriptionPlanSeeder extends Seeder
                 'duration_days' => 36500,
                 'is_active' => true,
                 'is_default' => true,
+                'location_scope' => 'all',
             ]
         );
         SubscriptionPlan::updateOrCreate(
@@ -35,6 +36,7 @@ class SubscriptionPlanSeeder extends Seeder
                 'price' => 9.99,
                 'duration_days' => 30,
                 'is_active' => true,
+                'location_scope' => 'ge',
             ]
         );
     }

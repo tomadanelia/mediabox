@@ -18,6 +18,7 @@ class SubscriptionPlan extends Model
         'duration_days',
         'is_active',
         'is_public',
+        'location_scope', 
     ];
     protected $casts=[
         'price'=>'decimal:2',

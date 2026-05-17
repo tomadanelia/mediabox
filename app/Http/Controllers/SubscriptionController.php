@@ -12,6 +12,8 @@ use App\Models\CachedPersonalAccessToken;
 use App\Models\PaymentTransaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Services\GeoLocationService;
+
 class SubscriptionController extends Controller
 {
     public function __construct(
@@ -22,9 +24,14 @@ class SubscriptionController extends Controller
 {
     Auth::shouldUse('sanctum');
     $user = request()->user();
-
+    $isInternational = $geoService->isInternational($request->ip());
+    $scope = $isInternational ? 'intl' : 'ge';
     $plans = SubscriptionPlan::where('is_active', true)
     ->where('is_public', true)
+    ->where(function ($query) use ($scope) {
+        $query->where('location_scope', 'all')
+              ->orWhere('location_scope', $scope);
+    })
     ->get();
 
     $formattedPlans = $plans->map(function ($plan) use ($user) {
