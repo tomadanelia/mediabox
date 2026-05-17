@@ -17,7 +17,9 @@ use App\Services\GeoLocationService;
 class SubscriptionController extends Controller
 {
     public function __construct(
-        protected SubscriptionService $subscriptionService
+        protected SubscriptionService $subscriptionService,
+        protected GeoLocationService $geoService
+
     ) {}
 
     public function index(): JsonResponse
