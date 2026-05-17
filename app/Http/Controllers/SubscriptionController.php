@@ -26,7 +26,7 @@ class SubscriptionController extends Controller
 {
     Auth::shouldUse('sanctum');
     $user = request()->user();
-    $isInternational = $geoService->isInternational($request->ip());
+    $isInternational = $this->geoService->isInternational($request->ip());
     $scope = $isInternational ? 'intl' : 'ge';
     $plans = SubscriptionPlan::where('is_active', true)
     ->where('is_public', true)
