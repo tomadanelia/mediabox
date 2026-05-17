@@ -22,7 +22,7 @@ class SubscriptionController extends Controller
 
     ) {}
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
 {
     Auth::shouldUse('sanctum');
     $user = request()->user();
