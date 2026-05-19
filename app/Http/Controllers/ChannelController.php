@@ -11,11 +11,13 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use App\Models\SubscriptionPlan;
 use Illuminate\Support\Facades\DB;
+use App\Services\GeoLocationService;
 class ChannelController extends Controller
 {
     public function __construct(
         protected SyncingService $syncing_service,
-        protected ConcurrencyService $concurrencyService
+        protected ConcurrencyService $concurrencyService,
+        protected GeoLocationService $geoLocationService,
     ) {}
     public function initVisitor()
 {
@@ -49,22 +51,47 @@ class ChannelController extends Controller
             ->map(fn($rows) => $rows->pluck('plan_id')->all());
     });
 
+    $planScopeMap = Cache::remember('plan_scope_map', 3600, function () {
+        return DB::table('subscription_plans')
+            ->where('is_active', true)
+            ->pluck('location_scope', 'id')
+            ->all();
+    });
+
     $userPlanIds = $user ? $user->getActivePlanIds() : [];
     $userPlanIdMap = array_flip($userPlanIds);
 
+    $effectiveScope = $user
+        ? $this->geoLocationService->getEffectiveScope(request()->ip())
+        : null;
+
     [$formattedChannels, $accessibleIds] = $allChannels->reduce(
-        function ($carry, $channel) use ($userPlanIdMap, $channelPlanMap, $freePlanId, $hasHandshake, $user) {
+        function ($carry, $channel) use (
+            $userPlanIdMap, $channelPlanMap, $planScopeMap,
+            $freePlanId, $hasHandshake, $user, $effectiveScope
+        ) {
             [$formatted, $accessibleIds] = $carry;
 
             $channelPlans = $channelPlanMap[$channel->id] ?? [];
-            if (empty($channelPlans)) return $carry; // Ignore channels with no plan
+            if (empty($channelPlans)) return $carry;
 
             $isFreeChannel = in_array($freePlanId, $channelPlans);
-            
-            $hasPaidPlan = !empty(array_intersect_key(array_flip($channelPlans), $userPlanIdMap));
-            
             if ($user) {
-                $isAccessible = $isFreeChannel || $hasPaidPlan;
+                $isAccessible = false;
+
+                if ($isFreeChannel) {
+                    $isAccessible = true;
+                } else {
+                    foreach ($channelPlans as $planId) {
+                        if (!isset($userPlanIdMap[$planId])) continue;
+
+                        $scope = $planScopeMap[$planId] ?? 'ge';
+                        if ($scope === 'all' || $scope === $effectiveScope) {
+                            $isAccessible = true;
+                            break;
+                        }
+                    }
+                }
             } else {
                 $isAccessible = $isFreeChannel && $hasHandshake;
             }
@@ -80,7 +107,7 @@ class ChannelController extends Controller
             $formatted[] = [
                 'uuid'          => $channel->id,
                 'id'            => $channel->external_id,
-                'name'          => $channel->name,   
+                'name'          => $channel->name,
                 'logo'          => $channel->icon_url,
                 'number'        => $channel->number,
                 'category_ka'   => $channel->category?->name_ka,
@@ -206,8 +233,9 @@ public function getStreamUrl($id, Request $request): JsonResponse
    private function canAccessChannel(Channel $channel): bool
 {
     Auth::shouldUse('sanctum');
-    $user = request()->user(); 
-    $requiredPlanIds = Cache::remember("channel_plans_{$channel->id}", 3600, function() use ($channel) {
+    $user = request()->user();
+    $ip = request()->ip();
+    $requiredPlanIds = Cache::remember("channel_plans_{$channel->id}", 3600, function () use ($channel) {
         return DB::table('bundle_items')
             ->where('item_type', 1)
             ->where('item_id', $channel->id)
@@ -219,15 +247,40 @@ public function getStreamUrl($id, Request $request): JsonResponse
     });
 
     if (empty($requiredPlanIds)) {
-        return false; 
+        return false;
     }
 
     $freePlanId = '00000000-0000-0000-0000-000000000000';
     $isFreeChannel = in_array($freePlanId, $requiredPlanIds);
 
     if ($user) {
-        return $isFreeChannel || !empty(array_intersect($requiredPlanIds, $user->getActivePlanIds()));
+        if ($isFreeChannel) return true;
+
+        $activePlanIds = $user->getActivePlanIds();
+        $matchingPlanIds = array_intersect($requiredPlanIds, $activePlanIds);
+
+        if (empty($matchingPlanIds)) return false;
+        $effectiveScope = app(GeoLocationService::class)->getEffectiveScope($ip);
+        $allowedScopes = Cache::remember(
+            "plan_scopes_" . implode('_', $matchingPlanIds),
+            3600,
+            function () use ($matchingPlanIds) {
+                return DB::table('subscription_plans')
+                    ->whereIn('id', $matchingPlanIds)
+                    ->pluck('location_scope')
+                    ->toArray();
+            }
+        );
+
+        foreach ($allowedScopes as $scope) {
+            if ($scope === 'all' || $scope === $effectiveScope) {
+                return true;
+            }
+        }
+
+        return false;
     }
+
     return $isFreeChannel && (bool) session('is_web_visitor');
 }
 

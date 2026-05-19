@@ -27,4 +27,11 @@ class GeoLocationService
     {
         return $this->getCountryCode($ip) !== 'GE';
     }
+    public function getEffectiveScope(string $ip): string
+{
+    return cache()->remember("ip_scope_{$ip}", 3600, function() use ($ip) {
+        $code = $this->getCountryCode($ip);
+        return ($code === 'GE') ? 'ge' : 'intl';
+    });
+}
 }
