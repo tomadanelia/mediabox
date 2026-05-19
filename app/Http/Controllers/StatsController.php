@@ -35,15 +35,23 @@ class StatsController extends Controller
 
         $results = Redis::pipeline(function ($pipe) use ($cutoff, $channelMap) {
         $pipe->zrangebyscore('active_viewers:global', $cutoff, '+inf');
+        $pipe->zrangebyscore('active_viewers:idle', $cutoff, '+inf');
          foreach (array_keys($channelMap) as $externalId) {
             $pipe->zrangebyscore("active_viewers:{$externalId}", $cutoff, '+inf');
          }
         });
         $globalMembers = array_shift($results);
+        $idleMembers = array_shift($results);
 
         $stats = [
             'timestamp' => $now,
             'global'    => $this->parseMembers($globalMembers),
+            'idle'     => $this->parseMembers($idleMembers),
+            'summary' => [
+                'total_online' => count($globalMembers),
+                'watching_tv'  => count($globalMembers) - count($idleMembers),
+                'in_menu_idle' => count($idleMembers),
+            ],
             'channels'  => [],
         ];
 
