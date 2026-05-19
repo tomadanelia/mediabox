@@ -199,6 +199,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/channels/{id}/heartbeat', [StatsController::class, 'heartbeat']);
 });
 Route::post('/metrics/realtime', [StatsController::class, 'getMetrics']);
+Route::get('/metrics/user/{userId}', [StatsController::class, 'getUserDetails']);
 Route::get('/settings/homepage', [SettingController::class, 'getHomepageSettings']);
 Route::group(['middleware' => ['web']], function () {
     Route::get('/init-visitor', [ChannelController::class, 'initVisitor']);

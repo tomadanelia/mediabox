@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Channel;
+use App\Models\User;
 
 class StatsController extends Controller
 {
@@ -95,4 +96,51 @@ class StatsController extends Controller
             'users'    => $users??[],
         ];
     }
+
+public function getUserDetails(Request $request, $userId)
+{
+    $token = $request->header('X-Stats-Token') ?? $request->query('token');
+    if ($token !== config('services.flussonic.stats_token')) {
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
+    $user = User::where('id', $userId)
+        ->orWhere('numeric_id', $userId)
+        ->with(['account', 'subscriptionPlans' => function($query) {
+            $query->wherePivot('is_active', true)
+                  ->wherePivot('expires_at', '>', now());
+        }])
+        ->first();
+
+    if (!$user) {
+        return response()->json(['error' => 'User not found'], 404);
+    }
+
+    return response()->json([
+        'user_info' => [
+            'id' => $user->id,
+            'numeric_id' => $user->numeric_id,
+            'username' => $user->username,
+            'full_name' => $user->full_name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'role' => $user->role,
+            'created_at' => $user->created_at->toDateTimeString(),
+        ],
+        'account' => [
+            'balance' => $user->account?->balance ?? 0,
+        ],
+        'active_packets' => $user->subscriptionPlans->map(function ($plan) {
+            return [
+                'plan_id' => $plan->id,
+                'name_en' => $plan->name_en,
+                'name_ka' => $plan->name_ka,
+                'price' => $plan->price,
+                'expires_at' => $plan->pivot->expires_at->toDateTimeString(),
+                'days_remaining' => now()->diffInDays($plan->pivot->expires_at, false),
+                'auto_renew' => (bool) $plan->pivot->auto_renew,
+            ];
+        }),
+    ]);
+}
 }
