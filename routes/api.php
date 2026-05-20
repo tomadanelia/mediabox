@@ -25,6 +25,8 @@ use App\Http\Controllers\StatsController;
 use App\Http\Controllers\AdminChannelUrlController;
 use App\Http\Controllers\AdminBundleController;
 use App\Http\Controllers\TokenTtlController;
+use App\Http\Controllers\SupportTicketController;
+use App\Http\Controllers\AdminSupportTicketController;
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/categories', [ChannelController::class, 'getCategories']);
@@ -63,43 +65,43 @@ Route::get('/interpay/balance', [InterPayController::class, 'handle']);
 Route::post('/interpay/balance', [InterPayController::class, 'handle']);  
 Route::get('/plans', [SubscriptionController::class, 'index']);
 Route::get('/plans/{planId}/channels', [SubscriptionController::class, 'getChannelsForPlan']);
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/auth/logout', [AuthController::class, 'logout']);
-    Route::post('/auth/web/logout', [SpaAuthController::class, 'logout']);
-    Route::get('/user', [ProfileController::class, 'show']);
-    Route::put('/user/profile', [ProfileController::class, 'update']);
-    Route::post('/user/business-registration', [ProfileController::class, 'registerBusiness']);
-    Route::get('/user/company', [ProfileController::class, 'getCompanyDetail']);
-    Route::get('/user', function (Request $request) {
-        return $request->user()->load('account');
-    });
-    Route::post('/plans/purchase', [SubscriptionController::class, 'purchase']);
-    Route::get('/plans/my', [SubscriptionController::class, 'myPlans']);
-    Route::post('/plans/tv-limit',[SubscriptionController::class,'upgradeTvLimit']);
-    Route::get('/plans/tv-limit-price', [SubscriptionController::class, 'getTvLimitPrice']);
-    Route::get('/tv/logged-in/devices',[SubscriptionController::class,'getTvDevices']);
-    Route::post('/tv/free/device-slots', [SubscriptionController::class, 'logoutTvDevice']);
-    Route::post('/tv/device-name',[ProfileController::class,'giveTvDeviceName']);
-    Route::get('/tv/device/{device_id}', [ProfileController::class, 'getTvDeviceName']);
-    Route::get('/user/transactions', [SubscriptionController::class, 'getTransactions']);
-    Route::get('/user/preferences/favourite-channels', [UserPreferencesController::class, 'getFavouriteChannels']);
-    Route::post('/user/preferences/favourite-channels', [UserPreferencesController::class, 'addFavouriteChannel']);
-    Route::delete('/user/preferences/favourites/{channelId}', [UserPreferencesController::class, 'removeFavouriteChannel']);
-    Route::get('/admin/dashboard', [AdminCategoryController::class, 'dashboard'])->middleware('auth:sanctum');
-    Route::get('/user/devices', [RemoteController::class, 'getMyDevices']);
-    Route::post('/tv/remote/ready', [RemoteController::class, 'tvReady']);
-    Route::get('/channels/{id}/download', [DownloadController::class, 'downloadArchive']);
-    Route::get('/notifications', [NotificationController::class, 'index']);
-    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
-    Route::get('/profile/socket-token', [ProfileController::class, 'getSocketToken']);
-});
+    Route::middleware('auth:sanctum')->group(function () {
+            Route::post('/auth/logout', [AuthController::class, 'logout']);
+            Route::post('/auth/web/logout', [SpaAuthController::class, 'logout']);
+            Route::get('/user', [ProfileController::class, 'show']);
+            Route::put('/user/profile', [ProfileController::class, 'update']);
+            Route::post('/user/business-registration', [ProfileController::class, 'registerBusiness']);
+            Route::get('/user/company', [ProfileController::class, 'getCompanyDetail']);
+            Route::get('/user', function (Request $request) {
+                return $request->user()->load('account');
+            });
+            Route::post('/plans/purchase', [SubscriptionController::class, 'purchase']);
+            Route::get('/plans/my', [SubscriptionController::class, 'myPlans']);
+            Route::post('/plans/tv-limit',[SubscriptionController::class,'upgradeTvLimit']);
+            Route::get('/plans/tv-limit-price', [SubscriptionController::class, 'getTvLimitPrice']);
+            Route::get('/tv/logged-in/devices',[SubscriptionController::class,'getTvDevices']);
+            Route::post('/tv/free/device-slots', [SubscriptionController::class, 'logoutTvDevice']);
+            Route::post('/tv/device-name',[ProfileController::class,'giveTvDeviceName']);
+            Route::get('/tv/device/{device_id}', [ProfileController::class, 'getTvDeviceName']);
+            Route::get('/user/transactions', [SubscriptionController::class, 'getTransactions']);
+            Route::get('/user/preferences/favourite-channels', [UserPreferencesController::class, 'getFavouriteChannels']);
+            Route::post('/user/preferences/favourite-channels', [UserPreferencesController::class, 'addFavouriteChannel']);
+            Route::delete('/user/preferences/favourites/{channelId}', [UserPreferencesController::class, 'removeFavouriteChannel']);
+            Route::get('/admin/dashboard', [AdminCategoryController::class, 'dashboard'])->middleware('auth:sanctum');
+            Route::get('/user/devices', [RemoteController::class, 'getMyDevices']);
+            Route::post('/tv/remote/ready', [RemoteController::class, 'tvReady']);
+            Route::get('/channels/{id}/download', [DownloadController::class, 'downloadArchive']);
+            Route::get('/notifications', [NotificationController::class, 'index']);
+            Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+            Route::get('/profile/socket-token', [ProfileController::class, 'getSocketToken']);
+        });
 Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
-    Route::get('/users/search', [AdminUserController::class, 'search']);
-    Route::post('/users', [AdminUserController::class, 'store']);
-    Route::post('/users/adjust-balance', [AdminUserController::class, 'adjustBalance']);
-    Route::post('/logos', [SettingController::class, 'updateLogos']);
-    Route::post('/settings/tv-price', [SettingController::class, 'updateExtraTvPrice']);
-    Route::prefix('channels')->group(function () {
+        Route::get('/users/search', [AdminUserController::class, 'search']);
+        Route::post('/users', [AdminUserController::class, 'store']);
+        Route::post('/users/adjust-balance', [AdminUserController::class, 'adjustBalance']);
+        Route::post('/logos', [SettingController::class, 'updateLogos']);
+        Route::post('/settings/tv-price', [SettingController::class, 'updateExtraTvPrice']);
+        Route::prefix('channels')->group(function () {
         Route::post('/', [AdminChannelController::class, 'store']); 
         Route::get('/', [AdminChannelController::class, 'index']);
         Route::patch('/{id}/toggle-active', [AdminChannelController::class, 'toggleActive']);
@@ -152,12 +154,12 @@ Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function ()
         Route::delete('/{bundleId}/items',     [AdminBundleController::class, 'removeItem']);
 });
 
-Route::prefix('/modules')->group(function () {
+    Route::prefix('/modules')->group(function () {
         Route::get('/',                [AdminBundleController::class, 'listModules']);
         Route::post('/',               [AdminBundleController::class, 'storeModule']);
         Route::patch('/{moduleId}/toggle', [AdminBundleController::class, 'toggleModule']);
-});
-     Route::prefix('discounts')->group(function () {
+    });
+    Route::prefix('discounts')->group(function () {
         Route::get('/', [AdminDiscountController::class, 'index']);          
         Route::post('/', [AdminDiscountController::class, 'store']);         
         Route::put('/{id}', [AdminDiscountController::class, 'update']);     
@@ -181,7 +183,9 @@ Route::prefix('/modules')->group(function () {
     Route::prefix('/settings/tokens')->group(function () {
         Route::get('/', [TokenTtlController::class, 'getTokenSettings']);
         Route::post('/', [TokenTtlController::class, 'updateTokenSettings']);
-});
+    });
+    Route::get('/support/tickets', [AdminSupportTicketController::class, 'index']);
+    Route::patch('/support/tickets/{id}/status', [AdminSupportTicketController::class, 'updateStatus']);
 });
 Route::post('/tv/init', [TvPairingController::class, 'initialize']);
 Route::post('/tv/claim', [TvPairingController::class, 'claim'])
@@ -205,3 +209,12 @@ Route::group(['middleware' => ['web']], function () {
     Route::get('/init-visitor', [ChannelController::class, 'initVisitor']);
 });
 Route::patch('/admin/channels/{id}/number', [AdminChannelController::class, 'updateNumber']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/support/tickets', [SupportTicketController::class, 'store']);
+    Route::get('/support/tickets', [SupportTicketController::class, 'index']);
+});
+
+Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
+
+});

@@ -157,5 +157,8 @@ public function notificationReadReceipts()
 {
     return $this->hasMany(NotificationReadReceipt::class);
 }
-
+public function supportTickets()
+{
+    return $this->hasMany(SupportTicket::class);
+}
 }
