@@ -6,6 +6,7 @@ use App\Models\InterpayCallbackLog;
 use App\Http\Requests\InterPayRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Models\PaymentTransaction; 
 
 class CreditBalanceService
 {
@@ -63,7 +64,20 @@ $identifier = $request->input('CUSTOMER_ID');
                     'provider' => $request->input('PROVIDER'),
                     'terminal' => $request->input('TERMINAL'),
                 ]);
-                
+                PaymentTransaction::create([
+                    'user_id' => $account->user_id, 
+                    'plan_id' => null,              
+                    'amount' => $amount / 100,
+                    'currency' => 'GEL',
+                    'status' => 'completed',
+                    'payment_method' => 'interpay_terminal',
+                    'metadata' => [
+                        'item_name' => 'Balance Top-up',
+                        'interpay_payment_id' => $paymentId,
+                        'terminal' => $request->input('TERMINAL'),
+                        'provider' => $request->input('PROVIDER')
+                    ]
+                ]);
                   return [
                 'success' => true,
                 'status' => 200,
