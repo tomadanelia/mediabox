@@ -27,6 +27,7 @@ use App\Http\Controllers\AdminBundleController;
 use App\Http\Controllers\TokenTtlController;
 use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\AdminSupportTicketController;
+use App\Http\Controllers\InterPayInitController;
 Route::prefix('channels')->group(function () {
     Route::get('/', [ChannelController::class, 'getChannelFacade']);
     Route::get('/categories', [ChannelController::class, 'getCategories']);
@@ -213,8 +214,5 @@ Route::patch('/admin/channels/{id}/number', [AdminChannelController::class, 'upd
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/support/tickets', [SupportTicketController::class, 'store']);
     Route::get('/support/tickets', [SupportTicketController::class, 'index']);
-});
-
-Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
-
+    Route::get('/interpay/init', [InterpayInitController::class, 'init']);
 });
